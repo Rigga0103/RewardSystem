@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -186,13 +187,16 @@ export default function QRCodeForm() {
 
   // Removed markCouponAsUsed because it's now integrated into handleSubmit for parallel execution
 
+  // Use Next.js search params hook
+  const searchParams = useSearchParams();
+
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get("code");
+    // searchParams.get() returns the decoded value automatically
+    const codeFromUrl = searchParams.get("code");
     if (codeFromUrl) {
       setFormData((prev) => ({ ...prev, couponCode: codeFromUrl }));
     }
-  }, []);
+  }, [searchParams]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -367,7 +371,7 @@ export default function QRCodeForm() {
                     value={formData.couponCode}
                     onChange={handleInputChange}
                     placeholder="PROMO CODE"
-                    className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-red-500 focus:ring-red-500 font-mono text-center uppercase tracking-widest text-sm font-bold placeholder:font-normal placeholder:tracking-normal"
+                    className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-red-500 focus:ring-red-500 font-mono text-center tracking-widest text-sm font-bold placeholder:font-normal placeholder:tracking-normal"
                     autoComplete="off"
                   />
                   {isValidatingCoupon && (

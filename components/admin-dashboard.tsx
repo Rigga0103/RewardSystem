@@ -275,11 +275,7 @@ export default function PremiumAdminDashboard() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const generateUniqueCode = (existingCodes: Set<string>): string => {
-    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const lowercase = "abcdefghijklmnopqrstuvwxyz";
-    const numbers = "0123456789";
-    const special = "@#$%&*!?";
-    const allChars = uppercase + lowercase + numbers + special;
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars (0/O, 1/I/L)
 
     let code: string;
     let attempts = 0;
@@ -287,19 +283,11 @@ export default function PremiumAdminDashboard() {
 
     do {
       code = "";
-      code += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
-      code += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
-      code += numbers.charAt(Math.floor(Math.random() * numbers.length));
-      code += special.charAt(Math.floor(Math.random() * special.length));
-
-      for (let i = 0; i < 6; i++) {
-        code += allChars.charAt(Math.floor(Math.random() * allChars.length));
+      for (let i = 0; i < 10; i++) {
+        code += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
       }
-
-      code = code
-        .split("")
-        .sort(() => Math.random() - 0.5)
-        .join("");
 
       attempts++;
       if (attempts > maxAttempts) {
@@ -417,7 +405,7 @@ export default function PremiumAdminDashboard() {
         const uniqueCode = generateUniqueCode(existingCodes);
         existingCodes.add(uniqueCode);
         newCoupons.push([
-          "", // Col A: Keep empty as per user request
+          currentDate, // Col A: Creation Timestamp (YYYY-MM-DD HH:mm:ss)
           uniqueCode,
           "unused",
           rewardAmount,

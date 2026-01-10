@@ -217,7 +217,9 @@ export default function PremiumTrackingSystem() {
   };
 
   const getFormLink = (couponCode: string): string => {
-    return `${window.location.origin}/redeem?code=${couponCode}`;
+    return `${window.location.origin}/redeem?code=${encodeURIComponent(
+      couponCode
+    )}`;
   };
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
