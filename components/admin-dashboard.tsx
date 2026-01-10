@@ -263,8 +263,8 @@ const CouponTable = ({
 
 export default function PremiumAdminDashboard() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [batchSize, setBatchSize] = useState(10);
-  const [rewardAmount, setRewardAmount] = useState(100);
+  const [batchSize, setBatchSize] = useState<number | string>("");
+  const [rewardAmount, setRewardAmount] = useState<number | string>("");
   const [activeTab, setActiveTab] = useState("unused");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -275,7 +275,11 @@ export default function PremiumAdminDashboard() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const generateUniqueCode = (existingCodes: Set<string>): string => {
-    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars (0/O, 1/I/L)
+    const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lowercase = "abcdefghjkmnpqrstuvwxyz";
+    const numbers = "23456789";
+    const special = "@#$%&*!";
+    const allChars = uppercase + lowercase + numbers + special;
 
     let code: string;
     let attempts = 0;
@@ -283,11 +287,22 @@ export default function PremiumAdminDashboard() {
 
     do {
       code = "";
-      for (let i = 0; i < 10; i++) {
-        code += characters.charAt(
-          Math.floor(Math.random() * characters.length)
-        );
+      // Ensure at least one of each type
+      code += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+      code += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+      code += numbers.charAt(Math.floor(Math.random() * numbers.length));
+      code += special.charAt(Math.floor(Math.random() * special.length));
+
+      // Fill remaining 6 characters with mix
+      for (let i = 0; i < 6; i++) {
+        code += allChars.charAt(Math.floor(Math.random() * allChars.length));
       }
+
+      // Shuffle the code
+      code = code
+        .split("")
+        .sort(() => Math.random() - 0.5)
+        .join("");
 
       attempts++;
       if (attempts > maxAttempts) {
@@ -401,14 +416,21 @@ export default function PremiumAdminDashboard() {
       const currentDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
       const newCoupons: (string | number)[][] = [];
 
-      for (let i = 0; i < batchSize; i++) {
+      const batchSizeNum =
+        typeof batchSize === "number" ? batchSize : parseInt(batchSize) || 10;
+      const rewardAmountNum =
+        typeof rewardAmount === "number"
+          ? rewardAmount
+          : parseInt(rewardAmount) || 100;
+
+      for (let i = 0; i < batchSizeNum; i++) {
         const uniqueCode = generateUniqueCode(existingCodes);
         existingCodes.add(uniqueCode);
         newCoupons.push([
           currentDate, // Col A: Creation Timestamp (YYYY-MM-DD HH:mm:ss)
           uniqueCode,
           "unused",
-          rewardAmount,
+          rewardAmountNum,
           "",
           "",
         ]);
@@ -419,7 +441,7 @@ export default function PremiumAdminDashboard() {
       await fetchCoupons();
       setIsDialogOpen(false);
       // Show success message for 5 seconds
-      setSuccessMessage(`Successfully generated ${batchSize} coupons!`);
+      setSuccessMessage(`Successfully generated ${batchSizeNum} coupons!`);
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error("Error generating coupons:", error);
@@ -606,10 +628,15 @@ export default function PremiumAdminDashboard() {
                         type="number"
                         value={batchSize}
                         onChange={(e) =>
-                          setBatchSize(Number.parseInt(e.target.value) || 1)
+                          setBatchSize(
+                            e.target.value === ""
+                              ? ""
+                              : Number.parseInt(e.target.value) || 1
+                          )
                         }
                         min="1"
                         max="500"
+                        placeholder="Enter batch size (e.g. 10)"
                         className="h-11 rounded-xl border-slate-200 focus:border-red-500 focus:ring-red-500"
                       />
                     </div>
@@ -627,10 +654,13 @@ export default function PremiumAdminDashboard() {
                         value={rewardAmount}
                         onChange={(e) =>
                           setRewardAmount(
-                            Number.parseInt(e.target.value) || 100
+                            e.target.value === ""
+                              ? ""
+                              : Number.parseInt(e.target.value) || 100
                           )
                         }
                         min="1"
+                        placeholder="Enter reward amount (e.g. 100)"
                         className="h-11 rounded-xl border-slate-200 focus:border-red-500 focus:ring-red-500"
                       />
                     </div>

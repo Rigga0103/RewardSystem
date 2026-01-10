@@ -211,30 +211,6 @@ export default function QRCodeForm() {
       setMessage({ type: "error", content: "Please enter a coupon code" });
       return false;
     }
-    if (!formData.name.trim()) {
-      setMessage({ type: "error", content: "Please enter your name" });
-      return false;
-    }
-    if (!formData.phone.trim()) {
-      setMessage({ type: "error", content: "Please enter your phone number" });
-      return false;
-    }
-    if (!formData.upiId.trim()) {
-      setMessage({ type: "error", content: "Please enter your UPI ID" });
-      return false;
-    }
-    // Simple UPI regex: username@bank
-    if (!/^[\w.-]+@[\w.-]+$/.test(formData.upiId)) {
-      setMessage({ type: "error", content: "Please enter a valid UPI ID" });
-      return false;
-    }
-    if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
-      setMessage({
-        type: "error",
-        content: "Please enter a valid 10-digit phone number",
-      });
-      return false;
-    }
     return true;
   };
 

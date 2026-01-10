@@ -56,10 +56,9 @@ export default function CouponSystem() {
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem("currentUser", JSON.stringify(user));
-    // Default to admin/dashboard view on new login if no view saved, or keep existing
-    if (!localStorage.getItem("activeView")) {
-      setActiveView("admin");
-    }
+    // Always open Dashboard after login
+    setActiveView("admin");
+    localStorage.setItem("activeView", "admin");
   };
 
   const handleLogout = () => {
