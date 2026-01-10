@@ -51,6 +51,7 @@ export default function QRCodeForm() {
   const [fetchedCoupons, setFetchedCoupons] = useState<any[]>([]);
   const [isFetchingCoupons, setIsFetchingCoupons] = useState<boolean>(false);
   const [submittedReward, setSubmittedReward] = useState<number | null>(null);
+  const [isCodeFromUrl, setIsCodeFromUrl] = useState<boolean>(false);
 
   const GOOGLE_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
@@ -195,6 +196,7 @@ export default function QRCodeForm() {
     const codeFromUrl = searchParams.get("code");
     if (codeFromUrl) {
       setFormData((prev) => ({ ...prev, couponCode: codeFromUrl }));
+      setIsCodeFromUrl(true);
     }
   }, [searchParams]);
 
@@ -347,8 +349,11 @@ export default function QRCodeForm() {
                     value={formData.couponCode}
                     onChange={handleInputChange}
                     placeholder="PROMO CODE"
-                    className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-red-500 focus:ring-red-500 font-mono text-center tracking-widest text-sm font-bold placeholder:font-normal placeholder:tracking-normal"
+                    className={`pl-10 h-10 border-slate-200 bg-slate-50/50 focus:bg-white focus:border-red-500 focus:ring-red-500 font-mono text-center tracking-widest text-sm font-bold placeholder:font-normal placeholder:tracking-normal ${
+                      isCodeFromUrl ? "bg-slate-100 cursor-not-allowed" : ""
+                    }`}
                     autoComplete="off"
+                    readOnly={isCodeFromUrl}
                   />
                   {isValidatingCoupon && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
