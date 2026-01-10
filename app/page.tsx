@@ -183,9 +183,6 @@ export default function CouponSystem() {
             <LogOut className="w-5 h-5" />
             Sign Out
           </Button>
-          <p className="text-center text-[10px] text-slate-300 mt-4">
-            Powered by Botivate
-          </p>
         </div>
       </aside>
 
@@ -324,6 +321,18 @@ export default function CouponSystem() {
             {activeView === "settings" && <SettingsView />}
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="py-3 px-4 text-center border-t border-gray-100 bg-white/80 backdrop-blur-sm">
+          <a
+            href="https://www.botivate.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+          >
+            Powered By <span className="font-semibold">Botivate</span>
+          </a>
+        </footer>
       </main>
     </div>
   );

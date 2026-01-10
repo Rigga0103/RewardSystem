@@ -252,7 +252,7 @@ export default function QRCodeForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-[400px] border-0 shadow-2xl bg-white overflow-hidden rounded-3xl">
         {submittedReward !== null ? (
           <div className="animate-in fade-in zoom-in-95 duration-500">
@@ -436,6 +436,18 @@ export default function QRCodeForm() {
           </>
         )}
       </Card>
+
+      {/* Footer */}
+      <div className="mt-4 text-center">
+        <a
+          href="https://www.botivate.in"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+        >
+          Powered By <span className="font-semibold">Botivate</span>
+        </a>
+      </div>
     </div>
   );
 }

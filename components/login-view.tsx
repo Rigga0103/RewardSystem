@@ -145,6 +145,18 @@ export default function LoginView({ onLogin }: LoginViewProps) {
           </form>
         </CardContent>
       </Card>
+
+      {/* Footer */}
+      <div className="mt-6 text-center">
+        <a
+          href="https://www.botivate.in"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+        >
+          Powered By <span className="font-semibold">Botivate</span>
+        </a>
+      </div>
     </div>
   );
 }
