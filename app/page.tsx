@@ -7,12 +7,14 @@ import ConsumerInterface from "@/components/consumer-interface";
 import TrackingSystem from "@/components/tracking-system";
 import LoginView from "@/components/login-view";
 import SettingsView from "@/components/settings-view";
+import MakePaymentView from "@/components/make-payment-view";
 import {
   LayoutDashboard,
   BarChart3,
   Settings,
   LogOut,
   Menu,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,7 +27,7 @@ interface User {
 
 export default function CouponSystem() {
   const [activeView, setActiveView] = useState<
-    "admin" | "consumer" | "tracking" | "settings"
+    "admin" | "consumer" | "tracking" | "settings" | "payment"
   >("admin");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,7 @@ export default function CouponSystem() {
     }
     if (savedView) {
       setActiveView(
-        savedView as "admin" | "consumer" | "tracking" | "settings"
+        savedView as "admin" | "consumer" | "tracking" | "settings" | "payment"
       );
     }
     setLoading(false);
@@ -152,6 +154,24 @@ export default function CouponSystem() {
               }`}
             />
             Tracking
+          </button>
+
+          <button
+            onClick={() => setActiveView("payment")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${
+              activeView === "payment"
+                ? "bg-red-50 text-red-600 shadow-sm ring-1 ring-red-200"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Wallet
+              className={`w-5 h-5 ${
+                activeView === "payment"
+                  ? "text-red-500"
+                  : "text-slate-400 group-hover:text-slate-600"
+              }`}
+            />
+            Make Payment
           </button>
 
           <button
@@ -279,6 +299,24 @@ export default function CouponSystem() {
                   </button>
 
                   <button
+                    onClick={() => setActiveView("payment")}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                      activeView === "payment"
+                        ? "bg-red-50 text-red-600 shadow-sm ring-1 ring-red-200"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <Wallet
+                      className={`w-5 h-5 ${
+                        activeView === "payment"
+                          ? "text-red-500"
+                          : "text-slate-400 group-hover:text-slate-600"
+                      }`}
+                    />
+                    Make Payment
+                  </button>
+
+                  <button
                     onClick={() => setActiveView("settings")}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                       activeView === "settings"
@@ -318,6 +356,7 @@ export default function CouponSystem() {
             {activeView === "admin" && <AdminDashboard />}
             {activeView === "consumer" && <ConsumerInterface />}
             {activeView === "tracking" && <TrackingSystem />}
+            {activeView === "payment" && <MakePaymentView />}
             {activeView === "settings" && <SettingsView />}
           </div>
         </div>

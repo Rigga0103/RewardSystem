@@ -240,36 +240,24 @@ export default function PremiumTrackingSystem() {
       // Yield to main thread to allow UI to update
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Dynamically import libraries to avoid SSR issues if necessary,
-      // though standard import works if we are sure this runs on client.
-      // We'll use the imported modules.
-      // const { default: jsPDF } = await import("jspdf");
-      // const QRCode = await import("qrcode");
-
       // A4 size: 210mm x 297mm
       const doc = new jsPDF();
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 15;
+      const margin = 10;
       const cols = 3;
       const colWidth = (pageWidth - margin * 2) / cols;
-      const rowHeight = 65; // Height reserved for each QR block
+      const rowHeight = 85; // Increased height for new design
 
       let x = margin;
-      let y = margin + 10; // Start a bit lower to leave room for header
+      let y = margin;
       let colIndex = 0;
-
-      // Title
-      doc.setFontSize(18);
-      doc.setTextColor(220, 38, 38); // Red color
-      doc.text("Coupon QR Codes", pageWidth / 2, margin, { align: "center" });
 
       for (const coupon of barcodesToDownload) {
         // Check if we need a new page
-        // If current y + rowHeight exceeds pageHeight - margin
         if (y + rowHeight > pageHeight - margin) {
           doc.addPage();
-          y = margin + 10;
+          y = margin;
           x = margin;
           colIndex = 0;
         }
@@ -278,30 +266,57 @@ export default function PremiumTrackingSystem() {
 
         // Generate QR Code Data URL
         const qrDataUrl = await QRCode.toDataURL(formLink, {
-          width: 200,
+          width: 250,
           margin: 1,
           color: {
-            dark: "#000000", // Black QR code
+            dark: "#000000",
             light: "#ffffff",
           },
         });
 
         // Calculate center of the column
         const colCenterX = x + colWidth / 2;
+        const cardX = x + 2;
+        const cardWidth = colWidth - 4;
 
-        // Draw Border for item (optional, purely aesthetic)
-        // doc.setDrawColor(229, 231, 235); // Gray-200
-        // doc.rect(x + 2, y, colWidth - 4, rowHeight - 4, "S");
+        // Draw border/card
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.rect(cardX, y, cardWidth, rowHeight - 2, "S");
 
-        // Add QR Image
-        // Image size 40x40 mm
-        doc.addImage(qrDataUrl, "PNG", colCenterX - 20, y + 5, 40, 40);
+        // Header: "Rigga Prime Pipe"
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38); // Red color
+        doc.text("Rigga Prime Pipe", colCenterX, y + 6, { align: "center" });
 
-        // Show Reward Price
-        doc.setFontSize(12);
+        // Draw a small line under header
+        doc.setDrawColor(220, 38, 38);
+        doc.setLineWidth(0.3);
+        doc.line(cardX + 5, y + 8, cardX + cardWidth - 5, y + 8);
+
+        // Add QR Image (larger size: 35x35 mm)
+        doc.addImage(qrDataUrl, "PNG", colCenterX - 17.5, y + 11, 35, 35);
+
+        // "Scan to get Reward" text
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0); // Black
+        doc.text("Scan to get Reward", colCenterX, y + 52, { align: "center" });
+
+        // Reward amount
+        doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(220, 38, 38); // Red
-        doc.text(`Rs. ${coupon.reward}`, colCenterX, y + 50, {
+        doc.text(`Rs. ${coupon.reward}/-`, colCenterX, y + 59, {
+          align: "center",
+        });
+
+        // Hindi text: "केवल इलेक्ट्रीशियन भाईयों के लिए"
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100); // Gray
+        doc.text("Only for Electrician Brothers", colCenterX, y + 66, {
           align: "center",
         });
 
@@ -316,7 +331,7 @@ export default function PremiumTrackingSystem() {
         }
       }
 
-      doc.save("coupons.pdf");
+      doc.save("Rigga_Prime_Pipe_Coupons.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
