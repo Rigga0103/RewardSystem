@@ -125,7 +125,7 @@ const BarcodeDisplay = ({ code, formLink, reward }: BarcodeDisplayProps) => {
             📱 Scan QR Code to Get Reward
           </h2>
           <p className="inline-block px-3 py-1 text-xs font-medium text-red-600 rounded-full bg-red-50">
-            केवल इलेक्ट्रॉनिक भाइयों के लिए
+            केवल इलेक्ट्रीशियन भाइयों के लिए
           </p>
         </div>
 
