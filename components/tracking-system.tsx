@@ -84,26 +84,88 @@ const formatDate = (dateStr: string): string => {
 
 const BarcodeDisplay = ({ code, formLink, reward }: BarcodeDisplayProps) => {
   return (
-    <div className="flex flex-col items-center p-5 border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-        <QRCodeSVG
-          value={formLink}
-          size={160}
-          level="H"
-          includeMargin={true}
-          fgColor="#000000"
-          bgColor="#ffffff"
-        />
+    <div className="relative overflow-hidden transition-all duration-300 bg-white border border-gray-100 shadow-lg group rounded-2xl hover:shadow-2xl hover:-translate-y-1">
+      {/* Decorative gradient accent */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500" />
+
+      {/* Header with brand */}
+      <div className="px-4 py-3 text-center bg-gradient-to-br from-red-600 to-red-700">
+        <h1 className="text-lg font-bold tracking-wide text-white drop-shadow-sm">
+          Rigga Prime Pipes
+        </h1>
+        <p className="text-red-100 text-[10px] font-medium tracking-widest uppercase mt-0.5">
+          Premium Quality Products
+        </p>
       </div>
-      <div className="text-sm font-mono font-bold text-gray-900 mb-2 bg-gray-100 px-3 py-1.5 rounded-full">
-        {code}
+
+      {/* Main content */}
+      <div className="flex flex-col items-center p-5">
+        {/* QR Code container with decorative border */}
+        <div className="relative p-1 mb-4 shadow-lg rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/20">
+          <div className="p-3 bg-white rounded-lg">
+            <QRCodeSVG
+              value={formLink}
+              size={140}
+              level="H"
+              includeMargin={false}
+              fgColor="#1f2937"
+              bgColor="#ffffff"
+            />
+          </div>
+          {/* Corner decorations */}
+          <div className="absolute w-3 h-3 border-t-2 border-l-2 border-red-300 rounded-tl -top-1 -left-1" />
+          <div className="absolute w-3 h-3 border-t-2 border-r-2 border-red-300 rounded-tr -top-1 -right-1" />
+          <div className="absolute w-3 h-3 border-b-2 border-l-2 border-red-300 rounded-bl -bottom-1 -left-1" />
+          <div className="absolute w-3 h-3 border-b-2 border-r-2 border-red-300 rounded-br -bottom-1 -right-1" />
+        </div>
+
+        {/* Scan instruction */}
+        <div className="mb-3 text-center">
+          <h2 className="mb-1 text-sm font-bold text-gray-800">
+            📱 Scan QR Code to Get Reward
+          </h2>
+          <p className="inline-block px-3 py-1 text-xs font-medium text-red-600 rounded-full bg-red-50">
+            केवल इलेक्ट्रॉनिक भाइयों के लिए
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px my-2 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+
+        {/* Coupon code */}
+        <div className="w-full mb-3 text-center">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1">
+            Coupon Code
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 font-mono text-sm font-bold text-white bg-gray-900 rounded-lg shadow-md">
+            <span className="text-red-400">●</span>
+            {code}
+            <span className="text-red-400">●</span>
+          </div>
+        </div>
+
+        {/* Form link */}
+        <div className="w-full p-2 mb-4 border border-gray-100 rounded-lg bg-gray-50">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium mb-1 text-center">
+            Redeem URL
+          </p>
+          <p className="text-[10px] text-gray-500 break-all text-center font-mono leading-relaxed">
+            {formLink}
+          </p>
+        </div>
+
+        {/* Reward badge */}
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 to-red-600 blur-md opacity-40 animate-pulse" />
+          <div className="relative bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-base px-6 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+            <span className="text-lg">🎁</span>
+            <span>₹{reward} Reward</span>
+          </div>
+        </div>
       </div>
-      <div className="text-xs text-gray-500 break-all max-w-[180px] text-center mb-2 bg-gray-50 p-2 rounded">
-        {formLink}
-      </div>
-      <div className="text-sm text-red-700 font-semibold bg-red-100 px-3 py-1.5 rounded-full">
-        ₹{reward} Reward
-      </div>
+
+      {/* Bottom decorative wave */}
+      <div className="h-2 bg-gradient-to-r from-red-100 via-red-200 to-red-100" />
     </div>
   );
 };
@@ -435,80 +497,80 @@ export default function PremiumTrackingSystem() {
 
   if (isLoading && coupons.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-            <Loader2 className="w-6 h-6 animate-spin text-white" />
+          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 shadow-lg rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30">
+            <Loader2 className="w-6 h-6 text-white animate-spin" />
           </div>
-          <p className="text-slate-600 font-medium">Loading tracking data...</p>
+          <p className="font-medium text-slate-600">Loading tracking data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-hidden">
+    <div className="flex flex-col h-full gap-4 overflow-hidden">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <div className="grid flex-shrink-0 grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="p-4 transition-shadow bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-medium tracking-wider uppercase text-slate-400">
                 Total
               </p>
               <p className="text-2xl font-bold text-slate-900 mt-0.5">
                 {totalCoupons}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <div className="flex items-center justify-center shadow-lg w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30">
               <Ticket className="w-5 h-5 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-4 transition-shadow bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-medium tracking-wider uppercase text-slate-400">
                 Redeemed
               </p>
               <p className="text-2xl font-bold text-red-600 mt-0.5">
                 {usedCouponsValues}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <div className="flex items-center justify-center shadow-lg w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-4 transition-shadow bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-medium tracking-wider uppercase text-slate-400">
                 Available
               </p>
               <p className="text-2xl font-bold text-red-600 mt-0.5">
                 {unusedCouponsValues}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <div className="flex items-center justify-center shadow-lg w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30">
               <Gift className="w-5 h-5 text-white" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-4 transition-shadow bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-md">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-medium tracking-wider uppercase text-slate-400">
                 Distributed
               </p>
               <p className="text-2xl font-bold text-red-600 mt-0.5">
                 ₹{totalRewards}
               </p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <div className="flex items-center justify-center shadow-lg w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30">
               <Wallet className="w-5 h-5 text-white" />
             </div>
           </div>
@@ -516,12 +578,12 @@ export default function PremiumTrackingSystem() {
       </div>
 
       {/* Main Tracking Card - Fills remaining space */}
-      <div className="flex-1 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden bg-white border border-gray-100 shadow-sm rounded-2xl">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="flex-shrink-0 px-5 py-4 border-b border-gray-100">
+          <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md shadow-red-500/20">
+              <div className="flex items-center justify-center shadow-md w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/20">
                 <Users className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -534,10 +596,10 @@ export default function PremiumTrackingSystem() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+            <div className="flex flex-wrap w-full gap-2 lg:w-auto">
               {/* Search */}
               <div className="relative flex-grow lg:flex-grow-0 lg:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute w-4 h-4 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                 <Input
                   placeholder="Search..."
                   value={searchTerm}
@@ -546,7 +608,7 @@ export default function PremiumTrackingSystem() {
                 />
               </div>
 
-              <div className="flex bg-slate-100 p-1 rounded-xl">
+              <div className="flex p-1 bg-slate-100 rounded-xl">
                 <button
                   onClick={() => setFilterStatus("all")}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
@@ -592,20 +654,20 @@ export default function PremiumTrackingSystem() {
                 size="sm"
                 className="h-9 border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50"
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className="w-4 h-4 mr-2" />
                 {showBarcodes ? "Hide" : "Show"} QR
               </Button>
 
               <Button
                 onClick={downloadBarcodes}
                 size="sm"
-                className="h-9 bg-red-600 hover:bg-red-700 text-white"
+                className="text-white bg-red-600 h-9 hover:bg-red-700"
                 disabled={isDownloading}
               >
                 {isDownloading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="w-4 h-4 mr-2" />
                 )}
                 {isDownloading ? "Generating..." : "Download"}
               </Button>
@@ -625,12 +687,12 @@ export default function PremiumTrackingSystem() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto bg-slate-50/50 p-4">
+        <div className="flex-1 p-4 overflow-auto bg-slate-50/50">
           {/* QR Codes Grid - Only shows when showBarcodes is true */}
           {showBarcodes ? (
-            <div className="animate-in fade-in zoom-in-95 duration-300">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-bold text-lg text-slate-800">
+            <div className="duration-300 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-slate-800">
                   Unused Coupon QR Codes
                 </h3>
                 <span className="text-sm text-slate-500">
@@ -639,7 +701,7 @@ export default function PremiumTrackingSystem() {
                 </span>
               </div>
               {coupons.filter((c) => c.status === "unused").length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {coupons
                     .filter((c) => c.status === "unused")
                     .map((coupon) => (
@@ -652,14 +714,14 @@ export default function PremiumTrackingSystem() {
                     ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-50 flex items-center justify-center">
+                <div className="py-20 text-center bg-white border border-gray-100 rounded-2xl">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-slate-50">
                     <QrCode className="w-8 h-8 text-slate-300" />
                   </div>
-                  <h3 className="text-slate-900 font-medium mb-1">
+                  <h3 className="mb-1 font-medium text-slate-900">
                     No Unused Coupons
                   </h3>
-                  <p className="text-slate-500 text-sm">
+                  <p className="text-sm text-slate-500">
                     Create some coupons in the dashboard to see them here.
                   </p>
                 </div>
@@ -669,10 +731,10 @@ export default function PremiumTrackingSystem() {
             /* Table and Mobile Cards - Only shows when showBarcodes is false */
             <>
               {/* Desktop Table Container */}
-              <div className="hidden lg:flex flex-col h-full bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="flex-col hidden h-full overflow-hidden bg-white border border-gray-100 shadow-sm lg:flex rounded-xl">
                 {/* Table Header - Fixed */}
-                <div className="bg-gradient-to-r from-red-600 to-red-700 px-5 py-3 flex-shrink-0">
-                  <div className="grid grid-cols-7 gap-4 text-xs font-medium text-white uppercase tracking-wider">
+                <div className="flex-shrink-0 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700">
+                  <div className="grid grid-cols-7 gap-4 text-xs font-medium tracking-wider text-white uppercase">
                     <div>Code</div>
                     <div>Status</div>
                     <div>Reward</div>
@@ -686,11 +748,11 @@ export default function PremiumTrackingSystem() {
                 {/* Table Body - Scrollable */}
                 <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
                   {sortedCoupons.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <div className="py-12 text-center">
+                      <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50">
                         <Search className="w-6 h-6 text-gray-400" />
                       </div>
-                      <p className="text-slate-500 text-sm">
+                      <p className="text-sm text-slate-500">
                         No coupons found matching your filters.
                       </p>
                     </div>
@@ -708,7 +770,7 @@ export default function PremiumTrackingSystem() {
                             index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                           }`}
                         >
-                          <div className="font-mono text-sm font-semibold text-slate-800 tracking-wide">
+                          <div className="font-mono text-sm font-semibold tracking-wide text-slate-800">
                             {coupon.code}
                           </div>
                           <div>
@@ -735,19 +797,19 @@ export default function PremiumTrackingSystem() {
                             ₹{coupon.reward}
                           </div>
                           <div
-                            className="text-sm text-slate-500 truncate"
+                            className="text-sm truncate text-slate-500"
                             title={coupon.claimedBy || consumer?.name || ""}
                           >
                             {coupon.claimedBy || consumer?.name || "—"}
                           </div>
                           <div
-                            className="text-sm text-slate-500 truncate"
+                            className="text-sm truncate text-slate-500"
                             title={coupon.phone || consumer?.phone}
                           >
                             {coupon.phone || consumer?.phone || "—"}
                           </div>
                           <div
-                            className="text-sm text-slate-500 truncate"
+                            className="text-sm truncate text-slate-500"
                             title={coupon.upiId || consumer?.upiId}
                           >
                             {coupon.upiId || consumer?.upiId || "—"}
@@ -766,7 +828,7 @@ export default function PremiumTrackingSystem() {
                 </div>
 
                 {/* Table Footer - Fixed */}
-                <div className="bg-slate-50 border-t border-gray-100 px-5 py-3 flex-shrink-0">
+                <div className="flex-shrink-0 px-5 py-3 border-t border-gray-100 bg-slate-50">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">
                       Showing{" "}
@@ -775,7 +837,7 @@ export default function PremiumTrackingSystem() {
                       </span>{" "}
                       coupons
                     </span>
-                    <span className="text-slate-400 text-xs text-right">
+                    <span className="text-xs text-right text-slate-400">
                       Scroll for more
                     </span>
                   </div>
@@ -783,13 +845,13 @@ export default function PremiumTrackingSystem() {
               </div>
 
               {/* Mobile Cards */}
-              <div className="lg:hidden space-y-3 overflow-y-auto flex-1">
+              <div className="flex-1 space-y-3 overflow-y-auto lg:hidden">
                 {sortedCoupons.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
+                  <div className="py-12 text-center">
+                    <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50">
                       <Search className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-slate-500 text-sm">No coupons found.</p>
+                    <p className="text-sm text-slate-500">No coupons found.</p>
                   </div>
                 ) : (
                   sortedCoupons.map((coupon) => {
@@ -815,10 +877,10 @@ export default function PremiumTrackingSystem() {
                                 onChange={() =>
                                   toggleCouponSelection(coupon.code)
                                 }
-                                className="rounded border-gray-300 text-red-600 focus:ring-red-500 w-5 h-5"
+                                className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
                               />
                               <div>
-                                <div className="font-mono text-base font-bold text-slate-800 tracking-wide">
+                                <div className="font-mono text-base font-bold tracking-wide text-slate-800">
                                   {coupon.code}
                                 </div>
                                 <span
@@ -848,12 +910,12 @@ export default function PremiumTrackingSystem() {
                           </div>
 
                           {/* Data Grid with robust fallbacks */}
-                          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100/80 text-sm">
+                          <div className="grid grid-cols-2 gap-4 pt-3 text-sm border-t border-gray-100/80">
                             <div className="space-y-1">
                               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
                                 Claimed By
                               </span>
-                              <span className="font-medium text-slate-700 block truncate">
+                              <span className="block font-medium truncate text-slate-700">
                                 {coupon.claimedBy || consumer?.name || "—"}
                               </span>
                             </div>
@@ -861,7 +923,7 @@ export default function PremiumTrackingSystem() {
                               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
                                 Date
                               </span>
-                              <span className="font-medium text-slate-700 block truncate">
+                              <span className="block font-medium truncate text-slate-700">
                                 {formatDate(
                                   coupon.claimedAt ||
                                     consumer?.date ||
@@ -873,7 +935,7 @@ export default function PremiumTrackingSystem() {
                               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
                                 Phone
                               </span>
-                              <span className="font-medium text-slate-700 block truncate font-mono text-xs">
+                              <span className="block font-mono text-xs font-medium truncate text-slate-700">
                                 {coupon.phone || consumer?.phone || "—"}
                               </span>
                             </div>
@@ -881,7 +943,7 @@ export default function PremiumTrackingSystem() {
                               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold block">
                                 UPI ID
                               </span>
-                              <span className="font-medium text-slate-700 block truncate">
+                              <span className="block font-medium truncate text-slate-700">
                                 {coupon.upiId || consumer?.upiId || "—"}
                               </span>
                             </div>
