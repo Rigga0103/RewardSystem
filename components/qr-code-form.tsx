@@ -223,6 +223,26 @@ export default function QRCodeForm() {
       setMessage({ type: "error", content: "Please enter a coupon code" });
       return false;
     }
+    if (!formData.name.trim()) {
+      setMessage({ type: "error", content: "Please enter your full name" });
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      setMessage({ type: "error", content: "Please enter your phone number" });
+      return false;
+    }
+    if (!formData.upiId.trim()) {
+      setMessage({ type: "error", content: "Please enter your UPI ID" });
+      return false;
+    }
+    if (!formData.city.trim()) {
+      setMessage({ type: "error", content: "Please enter your city" });
+      return false;
+    }
+    if (!formData.dealerName.trim()) {
+      setMessage({ type: "error", content: "Please enter the dealer name" });
+      return false;
+    }
     return true;
   };
 
