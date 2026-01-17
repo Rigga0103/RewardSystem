@@ -175,7 +175,7 @@ export default function PremiumTrackingSystem() {
   const [consumers, setConsumers] = useState<Consumer[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<"all" | "used" | "unused">(
-    "all"
+    "all",
   );
   const [showBarcodes, setShowBarcodes] = useState<boolean>(false);
   const [selectedCoupons, setSelectedCoupons] = useState<string[]>([]);
@@ -187,7 +187,7 @@ export default function PremiumTrackingSystem() {
     try {
       const timestamp = new Date().getTime();
       const response = await fetch(
-        `${GOOGLE_SCRIPT_URL}?sheet=${COUPONS_SHEET}&action=fetch&t=${timestamp}`
+        `${GOOGLE_SCRIPT_URL}?sheet=${COUPONS_SHEET}&action=fetch&t=${timestamp}`,
       );
       const result = await response.json();
 
@@ -216,7 +216,7 @@ export default function PremiumTrackingSystem() {
             rowIndex: index + 2,
           }))
           .filter(
-            (coupon: Coupon) => coupon.code && coupon.status !== "deleted"
+            (coupon: Coupon) => coupon.code && coupon.status !== "deleted",
           );
 
         setCoupons(couponData);
@@ -231,7 +231,7 @@ export default function PremiumTrackingSystem() {
     try {
       const timestamp = new Date().getTime();
       const response = await fetch(
-        `${GOOGLE_SCRIPT_URL}?sheet=${CONSUMERS_SHEET}&action=fetch&t=${timestamp}`
+        `${GOOGLE_SCRIPT_URL}?sheet=${CONSUMERS_SHEET}&action=fetch&t=${timestamp}`,
       );
       const result = await response.json();
 
@@ -280,8 +280,44 @@ export default function PremiumTrackingSystem() {
 
   const getFormLink = (couponCode: string): string => {
     return `${window.location.origin}/redeem?code=${encodeURIComponent(
-      couponCode
+      couponCode,
     )}`;
+  };
+
+  // Function to load Hindi font for PDF
+  const loadHindiFont = async (doc: jsPDF): Promise<boolean> => {
+    try {
+      // Fetch the TTF font from public folder
+      const fontUrl = "/fonts/NotoSansDevanagari-Regular.ttf";
+
+      const response = await fetch(fontUrl);
+      if (!response.ok) {
+        console.warn("Failed to fetch Hindi font from public folder");
+        return false;
+      }
+
+      const fontBuffer = await response.arrayBuffer();
+
+      // Convert ArrayBuffer to base64
+      const bytes = new Uint8Array(fontBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const fontBase64 = btoa(binary);
+
+      // Add font to jsPDF
+      doc.addFileToVFS("NotoSansDevanagari-Regular.ttf", fontBase64);
+      doc.addFont(
+        "NotoSansDevanagari-Regular.ttf",
+        "NotoSansDevanagari",
+        "normal",
+      );
+      return true;
+    } catch (error) {
+      console.warn("Failed to load Hindi font, using fallback:", error);
+      return false;
+    }
   };
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -304,12 +340,16 @@ export default function PremiumTrackingSystem() {
 
       // A4 size: 210mm x 297mm
       const doc = new jsPDF();
+
+      // Load Hindi font and track if successful
+      const hindiFontLoaded = await loadHindiFont(doc);
+
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 10;
+      const margin = 8;
       const cols = 3;
       const colWidth = (pageWidth - margin * 2) / cols;
-      const rowHeight = 85; // Increased height for new design
+      const rowHeight = 95; // Increased height for complete design
 
       let x = margin;
       let y = margin;
@@ -328,59 +368,148 @@ export default function PremiumTrackingSystem() {
 
         // Generate QR Code Data URL
         const qrDataUrl = await QRCode.toDataURL(formLink, {
-          width: 250,
+          width: 300,
           margin: 1,
           color: {
-            dark: "#000000",
+            dark: "#1f2937",
             light: "#ffffff",
           },
         });
 
         // Calculate center of the column
         const colCenterX = x + colWidth / 2;
-        const cardX = x + 2;
-        const cardWidth = colWidth - 4;
+        const cardX = x + 1.5;
+        const cardWidth = colWidth - 3;
 
-        // Draw border/card
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.5);
+        // Draw outer border/card with rounded corners effect
+        doc.setDrawColor(229, 231, 235); // Light gray border
+        doc.setLineWidth(0.3);
         doc.rect(cardX, y, cardWidth, rowHeight - 2, "S");
 
-        // Header: "Rigga Prime Pipe"
-        doc.setFontSize(10);
+        // Draw red header bar
+        doc.setFillColor(220, 38, 38); // Red background
+        doc.rect(cardX, y, cardWidth, 10, "F");
+
+        // Header: "Rigga Prime Pipes"
+        doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38); // Red color
-        doc.text("Rigga Prime Pipe", colCenterX, y + 6, { align: "center" });
+        doc.setTextColor(255, 255, 255); // White text
+        doc.text("Rigga Prime Pipes", colCenterX, y + 5, { align: "center" });
 
-        // Draw a small line under header
+        // Subtitle: "Premium Quality Products"
+        doc.setFontSize(5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(254, 202, 202); // Light red/pink
+        doc.text("PREMIUM QUALITY PRODUCTS", colCenterX, y + 8.5, {
+          align: "center",
+        });
+
+        // Add QR Image with red border effect
+        const qrSize = 28;
+        const qrX = colCenterX - qrSize / 2;
+        const qrY = y + 13;
+
+        // Draw red border around QR
         doc.setDrawColor(220, 38, 38);
-        doc.setLineWidth(0.3);
-        doc.line(cardX + 5, y + 8, cardX + cardWidth - 5, y + 8);
+        doc.setLineWidth(0.8);
+        doc.rect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, "S");
 
-        // Add QR Image (larger size: 35x35 mm)
-        doc.addImage(qrDataUrl, "PNG", colCenterX - 17.5, y + 11, 35, 35);
+        // Add QR Image
+        doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
-        // "Scan to get Reward" text
+        // "Scan QR Code to Get Reward" text
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(31, 41, 55); // Dark gray
+        doc.text("Scan QR Code to Get Reward", colCenterX, y + 46, {
+          align: "center",
+        });
+
+        // Hindi text - using Noto Sans Devanagari font if loaded
+        doc.setFontSize(6);
+        if (hindiFontLoaded) {
+          doc.setFont("NotoSansDevanagari", "normal");
+          doc.setTextColor(220, 38, 38); // Red
+          doc.text("केवल इलेक्ट्रीशियन भाइयों के लिए", colCenterX, y + 50, {
+            align: "center",
+          });
+        } else {
+          // Fallback to English if Hindi font not available
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(220, 38, 38); // Red
+          doc.text("Only for Electrician Brothers", colCenterX, y + 50, {
+            align: "center",
+          });
+        }
+
+        // Divider line
+        doc.setDrawColor(229, 231, 235);
+        doc.setLineWidth(0.2);
+        doc.line(cardX + 5, y + 53, cardX + cardWidth - 5, y + 53);
+
+        // Coupon Code label
+        doc.setFontSize(4);
+        doc.setTextColor(156, 163, 175); // Gray
+        doc.text("COUPON CODE", colCenterX, y + 57, { align: "center" });
+
+        // Coupon Code value with dark background
+        const codeText = coupon.code;
+        const codeWidth = doc.getTextWidth(codeText) + 8;
+        doc.setFillColor(17, 24, 39); // Dark background
+        doc.roundedRect(
+          colCenterX - codeWidth / 2,
+          y + 58.5,
+          codeWidth,
+          5,
+          1,
+          1,
+          "F",
+        );
+        doc.setFontSize(6);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255); // White text
+        doc.text(codeText, colCenterX, y + 62, { align: "center" });
+
+        // Redeem URL label
+        doc.setFontSize(4);
+        doc.setTextColor(156, 163, 175); // Gray
+        doc.text("REDEEM URL", colCenterX, y + 68, { align: "center" });
+
+        // Redeem URL value (truncated if too long)
+        doc.setFontSize(4);
+        doc.setTextColor(107, 114, 128); // Medium gray
+        const maxUrlWidth = cardWidth - 6;
+        let displayUrl = formLink;
+        while (
+          doc.getTextWidth(displayUrl) > maxUrlWidth &&
+          displayUrl.length > 10
+        ) {
+          displayUrl = displayUrl.slice(0, -1);
+        }
+        if (displayUrl !== formLink) displayUrl += "...";
+        doc.text(displayUrl, colCenterX, y + 72, { align: "center" });
+
+        // Reward badge with gradient effect (simulated with red background)
+        const badgeWidth = 28;
+        const badgeHeight = 7;
+        const badgeX = colCenterX - badgeWidth / 2;
+        const badgeY = y + 76;
+
+        // Draw reward badge
+        doc.setFillColor(220, 38, 38); // Red
+        doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 3.5, 3.5, "F");
+
+        // Reward text
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0); // Black
-        doc.text("Scan to get Reward", colCenterX, y + 52, { align: "center" });
-
-        // Reward amount
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(220, 38, 38); // Red
-        doc.text(`Rs. ${coupon.reward}/-`, colCenterX, y + 59, {
+        doc.setTextColor(255, 255, 255); // White
+        doc.text(`Rs. ${coupon.reward} Reward`, colCenterX, badgeY + 5, {
           align: "center",
         });
 
-        // Hindi text: "केवल इलेक्ट्रीशियन भाईयों के लिए"
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 100, 100); // Gray
-        doc.text("Only for Electrician Brothers", colCenterX, y + 66, {
-          align: "center",
-        });
+        // Bottom decorative bar
+        doc.setFillColor(254, 226, 226); // Light red
+        doc.rect(cardX, y + rowHeight - 4, cardWidth, 2, "F");
 
         // Move to next position
         colIndex++;
@@ -393,7 +522,7 @@ export default function PremiumTrackingSystem() {
         }
       }
 
-      doc.save("Rigga_Prime_Pipe_Coupons.pdf");
+      doc.save("Rigga_Prime_Pipes_Coupons.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
@@ -406,7 +535,7 @@ export default function PremiumTrackingSystem() {
     setSelectedCoupons((prev) =>
       prev.includes(couponCode)
         ? prev.filter((code) => code !== couponCode)
-        : [...prev, couponCode]
+        : [...prev, couponCode],
     );
   };
 
@@ -437,7 +566,7 @@ export default function PremiumTrackingSystem() {
   const totalCoupons = coupons.length;
   const usedCouponsValues = coupons.filter((c) => c.status === "used").length;
   const unusedCouponsValues = coupons.filter(
-    (c) => c.status === "unused"
+    (c) => c.status === "unused",
   ).length;
   const totalRewards = coupons
     .filter((c) => c.status === "used")
@@ -461,22 +590,22 @@ export default function PremiumTrackingSystem() {
         coupon.reward,
         coupon.claimedBy ||
           consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase()
+            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
           )?.name ||
           "",
         coupon.phone ||
           consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase()
+            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
           )?.phone ||
           "",
         coupon.upiId ||
           consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase()
+            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
           )?.upiId ||
           "",
         coupon.claimedAt ||
           consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase()
+            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
           )?.date ||
           "",
         coupon.status === "used" ? `₹${coupon.reward}` : "₹0",
@@ -761,7 +890,7 @@ export default function PremiumTrackingSystem() {
                       const consumer = consumers.find(
                         (c) =>
                           c.couponCode.toLowerCase() ===
-                          coupon.code.toLowerCase()
+                          coupon.code.toLowerCase(),
                       );
                       return (
                         <div
@@ -818,7 +947,7 @@ export default function PremiumTrackingSystem() {
                             {formatDate(
                               coupon.claimedAt ||
                                 consumer?.date ||
-                                coupon.created
+                                coupon.created,
                             )}
                           </div>
                         </div>
@@ -857,7 +986,8 @@ export default function PremiumTrackingSystem() {
                   sortedCoupons.map((coupon) => {
                     const consumer = consumers.find(
                       (c) =>
-                        c.couponCode.toLowerCase() === coupon.code.toLowerCase()
+                        c.couponCode.toLowerCase() ===
+                        coupon.code.toLowerCase(),
                     );
                     return (
                       <Card
@@ -927,7 +1057,7 @@ export default function PremiumTrackingSystem() {
                                 {formatDate(
                                   coupon.claimedAt ||
                                     consumer?.date ||
-                                    coupon.created
+                                    coupon.created,
                                 )}
                               </span>
                             </div>
