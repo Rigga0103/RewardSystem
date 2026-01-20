@@ -348,8 +348,9 @@ export default function PremiumTrackingSystem() {
       const pageHeight = 297;
       const margin = 8;
       const cols = 3;
+      const rows = 3; // 3 rows per page for full page coverage
       const colWidth = (pageWidth - margin * 2) / cols;
-      const rowHeight = 95; // Increased height for complete design
+      const rowHeight = (pageHeight - margin * 2) / rows; // ~93.67mm per row for full page
 
       let x = margin;
       let y = margin;
