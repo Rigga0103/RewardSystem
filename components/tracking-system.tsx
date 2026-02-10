@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ChangeEvent } from "react";
+import React, { useState, useEffect, type ChangeEvent } from "react";
 import {
   Card,
   CardContent,
@@ -23,10 +23,18 @@ import {
   Gift,
   Wallet,
   Users,
+  Printer,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 const GOOGLE_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
@@ -181,6 +189,9 @@ export default function PremiumTrackingSystem() {
   const [selectedCoupons, setSelectedCoupons] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [batchCoupons, setBatchCoupons] = useState<Coupon[]>([]);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState<boolean>(false);
 
   const fetchCoupons = async () => {
     setIsLoading(true);
@@ -322,11 +333,13 @@ export default function PremiumTrackingSystem() {
 
   /* eslint-disable @typescript-eslint/no-unused-vars */
   // @ts-ignore
-  const downloadBarcodes = async (): Promise<void> => {
+  const downloadBarcodes = async (couponsToDownloadArg?: Coupon[]): Promise<jsPDF | void> => {
     const barcodesToDownload =
-      selectedCoupons.length > 0
-        ? coupons.filter((c) => selectedCoupons.includes(c.code))
-        : coupons.filter((c) => c.status === "unused");
+      couponsToDownloadArg || (
+        selectedCoupons.length > 0
+          ? coupons.filter((c) => selectedCoupons.includes(c.code))
+          : coupons.filter((c) => c.status === "unused")
+      );
 
     if (barcodesToDownload.length === 0) {
       alert("No coupons selected to download.");
@@ -523,12 +536,54 @@ export default function PremiumTrackingSystem() {
         }
       }
 
-      doc.save("Rigga_Prime_Pipes_Coupons.pdf");
+      doc.save(couponsToDownloadArg ? `Rigga_Batch_${couponsToDownloadArg.length}.pdf` : "Rigga_Prime_Pipes_Coupons.pdf");
+      return doc;
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Failed to generate PDF. Please try again.");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const printBatch = async (couponsToPrint: Coupon[]): Promise<void> => {
+    const doc = await downloadBarcodes(couponsToPrint);
+    if (doc) {
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, "_blank");
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+    }
+  };
+
+  const generateBatch = () => {
+    const allUnusedData = coupons.filter((c) => c.status === "unused");
+    if (allUnusedData.length === 0) {
+      alert("No unused coupons available.");
+      return;
+    }
+
+    // SLICING LOGIC: visibleData = allData.slice(currentIndex, currentIndex + 9)
+    // Updated to exactly 9 per batch as requested
+    const visibleData = allUnusedData.slice(currentIndex, currentIndex + 9);
+
+    if (visibleData.length === 0) {
+      // Reset currentIndex if we reached the end to allow cycling
+      const restart = confirm("All unused coupons have been shown in batches. Start from the beginning?");
+      if (restart) {
+        const firstBatch = allUnusedData.slice(0, 9);
+        setBatchCoupons(firstBatch);
+        setCurrentIndex(9);
+        setIsBatchModalOpen(true);
+      }
+    } else {
+      setBatchCoupons(visibleData);
+      setCurrentIndex((prev: number) => prev + 9); // Increment by 9
+      setIsBatchModalOpen(true);
     }
   };
 
@@ -590,25 +645,25 @@ export default function PremiumTrackingSystem() {
         coupon.status,
         coupon.reward,
         coupon.claimedBy ||
-          consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
-          )?.name ||
-          "",
+        consumers.find(
+          (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
+        )?.name ||
+        "",
         coupon.phone ||
-          consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
-          )?.phone ||
-          "",
+        consumers.find(
+          (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
+        )?.phone ||
+        "",
         coupon.upiId ||
-          consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
-          )?.upiId ||
-          "",
+        consumers.find(
+          (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
+        )?.upiId ||
+        "",
         coupon.claimedAt ||
-          consumers.find(
-            (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
-          )?.date ||
-          "",
+        consumers.find(
+          (c) => c.couponCode.toLowerCase() === coupon.code.toLowerCase(),
+        )?.date ||
+        "",
         coupon.status === "used" ? `₹${coupon.reward}` : "₹0",
         getFormLink(coupon.code),
       ]),
@@ -741,31 +796,28 @@ export default function PremiumTrackingSystem() {
               <div className="flex p-1 bg-slate-100 rounded-xl">
                 <button
                   onClick={() => setFilterStatus("all")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    filterStatus === "all"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterStatus === "all"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setFilterStatus("used")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    filterStatus === "used"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterStatus === "used"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Used
                 </button>
                 <button
                   onClick={() => setFilterStatus("unused")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    filterStatus === "unused"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterStatus === "unused"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Unused
                 </button>
@@ -789,7 +841,17 @@ export default function PremiumTrackingSystem() {
               </Button>
 
               <Button
-                onClick={downloadBarcodes}
+                onClick={generateBatch}
+                variant="outline"
+                size="sm"
+                className="h-9 border-red-200 text-red-600 hover:bg-red-50"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Batch (9)
+              </Button>
+
+              <Button
+                onClick={() => downloadBarcodes()}
                 size="sm"
                 className="text-white bg-red-600 h-9 hover:bg-red-700"
                 disabled={isDownloading}
@@ -896,27 +958,24 @@ export default function PremiumTrackingSystem() {
                       return (
                         <div
                           key={coupon.code}
-                          className={`grid grid-cols-7 gap-4 px-5 py-3.5 items-center hover:bg-red-50/10 transition-colors ${
-                            index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                          }`}
+                          className={`grid grid-cols-7 gap-4 px-5 py-3.5 items-center hover:bg-red-50/10 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                            }`}
                         >
                           <div className="font-mono text-sm font-semibold tracking-wide text-slate-800">
                             {coupon.code}
                           </div>
                           <div>
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                coupon.status === "used"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
-                              }`}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${coupon.status === "used"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                                }`}
                             >
                               <span
-                                className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                  coupon.status === "used"
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
+                                className={`w-1.5 h-1.5 rounded-full mr-1.5 ${coupon.status === "used"
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                                  }`}
                               />
                               {coupon.status === "used"
                                 ? "Redeemed"
@@ -947,8 +1006,8 @@ export default function PremiumTrackingSystem() {
                           <div className="text-sm text-slate-500">
                             {formatDate(
                               coupon.claimedAt ||
-                                consumer?.date ||
-                                coupon.created,
+                              consumer?.date ||
+                              coupon.created,
                             )}
                           </div>
                         </div>
@@ -993,11 +1052,10 @@ export default function PremiumTrackingSystem() {
                     return (
                       <Card
                         key={coupon.code}
-                        className={`border shadow-sm transition-all ${
-                          coupon.status === "used"
-                            ? "border-gray-100 bg-gray-50/50"
-                            : "border-red-100 bg-white shadow-red-100/20"
-                        }`}
+                        className={`border shadow-sm transition-all ${coupon.status === "used"
+                          ? "border-gray-100 bg-gray-50/50"
+                          : "border-red-100 bg-white shadow-red-100/20"
+                          }`}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-4">
@@ -1015,11 +1073,10 @@ export default function PremiumTrackingSystem() {
                                   {coupon.code}
                                 </div>
                                 <span
-                                  className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    coupon.status === "used"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-red-100 text-red-700"
-                                  }`}
+                                  className={`inline-flex items-center mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${coupon.status === "used"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                    }`}
                                 >
                                   {coupon.status === "used"
                                     ? "Redeemed"
@@ -1029,11 +1086,10 @@ export default function PremiumTrackingSystem() {
                             </div>
                             <div className="text-right">
                               <span
-                                className={`text-lg font-bold ${
-                                  coupon.status === "used"
-                                    ? "text-slate-500"
-                                    : "text-red-600"
-                                }`}
+                                className={`text-lg font-bold ${coupon.status === "used"
+                                  ? "text-slate-500"
+                                  : "text-red-600"
+                                  }`}
                               >
                                 ₹{coupon.reward}
                               </span>
@@ -1057,8 +1113,8 @@ export default function PremiumTrackingSystem() {
                               <span className="block font-medium truncate text-slate-700">
                                 {formatDate(
                                   coupon.claimedAt ||
-                                    consumer?.date ||
-                                    coupon.created,
+                                  consumer?.date ||
+                                  coupon.created,
                                 )}
                               </span>
                             </div>
@@ -1089,6 +1145,97 @@ export default function PremiumTrackingSystem() {
           )}
         </div>
       </div>
+
+      {/* Batch Modal - Fixed Layout with Scrollable Body */}
+      <Dialog open={isBatchModalOpen} onOpenChange={setIsBatchModalOpen}>
+        <DialogContent className="w-[900px] h-[750px] !max-w-none !max-h-none flex flex-col p-0 overflow-hidden bg-white border-none shadow-2xl rounded-2xl">
+          {/* Header (Fixed) */}
+          <DialogHeader className="p-6 border-b bg-white flex-shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 bg-red-50 rounded-xl">
+                  <QrCode className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold text-slate-900">
+                    QR Code Batch Preview
+                  </DialogTitle>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Showing QR Codes {currentIndex - 9 + 1}–{currentIndex - 9 + batchCoupons.length}
+                  </p>
+                </div>
+              </div>
+              <div className="px-4 py-1.5 bg-red-600 text-white rounded-full text-xs font-bold tracking-tight shadow-sm">
+                BATCH {Math.ceil(currentIndex / 9)}
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Body (Scrollable Only Here) */}
+          <div className="flex-1 overflow-y-auto bg-slate-50 p-6 overscroll-contain">
+            <div className="grid grid-cols-3 gap-6">
+              {batchCoupons.map((coupon: Coupon) => (
+                <div key={coupon.code} className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-white p-2 border border-slate-100 rounded-xl shadow-inner">
+                    <QRCodeSVG
+                      value={getFormLink(coupon.code)}
+                      size={180}
+                      level="H"
+                      includeMargin={true}
+                      fgColor="#000000"
+                      bgColor="#ffffff"
+                      className="rounded-lg"
+                    />
+                  </div>
+                  <div className="w-full text-center space-y-1">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em]">Coupon Identifier</p>
+                    <p className="font-mono text-base font-black text-slate-900 tracking-wider">
+                      {coupon.code}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {/* Fill empty spots to maintain 3x3 layout look */}
+              {Array.from({ length: Math.max(0, 9 - batchCoupons.length) }).map((_, i) => (
+                <div key={`empty-${i}`} className="bg-slate-100/30 border border-slate-200 border-dashed rounded-2xl h-[280px] flex items-center justify-center opacity-50">
+                  <p className="text-xs text-slate-400 font-medium">Next available slot</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer (Fixed) */}
+          <div className="p-6 border-t bg-white flex justify-end gap-3 flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsBatchModalOpen(false)}
+              className="h-11 px-8 border-slate-200 text-slate-600 font-bold rounded-xl"
+            >
+              Close
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => printBatch(batchCoupons)}
+              className="h-11 border-slate-200 text-slate-700 font-bold hover:text-red-600 rounded-xl shadow-sm"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print Batch
+            </Button>
+            <Button
+              onClick={() => downloadBarcodes(batchCoupons)}
+              className="h-11 px-8 text-white bg-red-600 hover:bg-red-700 font-black rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-95"
+              disabled={isDownloading}
+            >
+              {isDownloading ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5 mr-2" />
+              )}
+              Download PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
