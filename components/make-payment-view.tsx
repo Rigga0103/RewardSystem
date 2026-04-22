@@ -97,14 +97,14 @@ export default function MakePaymentView() {
             // G (6): Phone
             // H (7): UPI ID
             // I (8): Payment Status
-            createdDate: row[0] || "",
+            createdDate: row[0] ? row[0].toString() : "",
             code: row[1] ? row[1].toString().trim() : "",
             reward: Number.parseFloat(row[3]) || 0,
-            claimedBy: row[4] || "",
-            claimedAt: row[5] || "",
-            phone: row[6] || "",
-            upiId: row[7] || "",
-            paymentStatus: row[8] || "",
+            claimedBy: row[4] ? row[4].toString() : "",
+            claimedAt: row[5] ? row[5].toString() : "",
+            phone: row[6] ? row[6].toString() : "",
+            upiId: row[7] ? row[7].toString().trim() : "",
+            paymentStatus: row[8] ? row[8].toString().trim() : "",
             rowIndex: index + 2, // +2 because of 0-indexing and header row
             rawRow: row, // Store original row to preserve all column data
           }));
@@ -132,17 +132,17 @@ export default function MakePaymentView() {
   const pendingItems = allItems.filter(
     (item) =>
       item.upiId &&
-      item.upiId.trim() !== "" &&
-      (!item.paymentStatus || item.paymentStatus.trim() === "")
+      item.upiId !== "" &&
+      (!item.paymentStatus || item.paymentStatus === "")
   );
 
   // History items: Column H (upiId) not empty AND Column I (paymentStatus) is not empty
   const historyItems = allItems.filter(
     (item) =>
       item.upiId &&
-      item.upiId.trim() !== "" &&
+      item.upiId !== "" &&
       item.paymentStatus &&
-      item.paymentStatus.trim() !== ""
+      item.paymentStatus !== ""
   );
 
   // Filter based on search
@@ -353,21 +353,19 @@ export default function MakePaymentView() {
               <div className="flex bg-slate-100 p-1 rounded-xl">
                 <button
                   onClick={() => setActiveTab("pending")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    activeTab === "pending"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "pending"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Pending ({totalPending})
                 </button>
                 <button
                   onClick={() => setActiveTab("history")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    activeTab === "history"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "history"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   History ({totalProcessed})
                 </button>
@@ -451,9 +449,8 @@ export default function MakePaymentView() {
                     filteredPendingItems.map((item, index) => (
                       <div
                         key={item.code}
-                        className={`grid grid-cols-8 gap-4 px-5 py-3.5 items-center hover:bg-orange-50/30 transition-colors ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                        }`}
+                        className={`grid grid-cols-8 gap-4 px-5 py-3.5 items-center hover:bg-orange-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox
@@ -630,9 +627,8 @@ export default function MakePaymentView() {
                     filteredHistoryItems.map((item, index) => (
                       <div
                         key={item.code}
-                        className={`grid grid-cols-8 gap-4 px-5 py-3.5 items-center hover:bg-green-50/30 transition-colors ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                        }`}
+                        className={`grid grid-cols-8 gap-4 px-5 py-3.5 items-center hover:bg-green-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                          }`}
                       >
                         <div className="text-sm text-slate-500">
                           {formatDate(item.createdDate)}
