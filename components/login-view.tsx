@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, LogIn, Lock, User } from "lucide-react";
+import { Loader2, LogIn, Lock, User, Shield } from "lucide-react";
 import Image from "next/image";
 
 interface LoginViewProps {
@@ -13,6 +13,7 @@ interface LoginViewProps {
 }
 
 export default function LoginView({ onLogin }: LoginViewProps) {
+  const [loginType, setLoginType] = useState<"admin" | "user">("user");
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +49,20 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         );
 
         if (matchedUser) {
-          onLogin({
-            name: matchedUser[1],
-            id: matchedUser[2],
-            role: matchedUser[4] || "User", // Default to User if undefined
-          });
+          const userRole = matchedUser[4] || "User";
+
+          // Check if login type matches user role
+          if (loginType === "admin" && userRole !== "Admin") {
+            setError("This user does not have admin privileges");
+          } else if (loginType === "user" && userRole === "Admin") {
+            setError("Please use Admin login for admin accounts");
+          } else {
+            onLogin({
+              name: matchedUser[1],
+              id: matchedUser[2],
+              role: userRole,
+            });
+          }
         } else {
           setError("Invalid User ID or Password");
         }
@@ -87,6 +97,43 @@ export default function LoginView({ onLogin }: LoginViewProps) {
             Sign in to access your dashboard
           </p>
         </CardHeader>
+
+        {/* Horizontal Tabs */}
+        <div className="px-8">
+          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6">
+            <button
+              onClick={() => {
+                setLoginType("user");
+                setError("");
+                setUserId("");
+                setPassword("");
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "user"
+                  ? "bg-white text-red-600 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+            >
+              <User className="w-4 h-4" />
+              User Login
+            </button>
+            <button
+              onClick={() => {
+                setLoginType("admin");
+                setError("");
+                setUserId("");
+                setPassword("");
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "admin"
+                  ? "bg-white text-red-600 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+            >
+              <Shield className="w-4 h-4" />
+              Admin Login
+            </button>
+          </div>
+        </div>
+
         <CardContent className="p-8 pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
@@ -138,7 +185,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               ) : (
                 <>
                   <LogIn className="w-4 h-4 mr-2" />
-                  Sign In
+                  Sign In as {loginType === "admin" ? "Admin" : "User"}
                 </>
               )}
             </Button>

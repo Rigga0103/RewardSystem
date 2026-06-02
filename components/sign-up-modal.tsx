@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, User, Phone, Mail, CreditCard, MapPin, Store, Lock, Save, X } from "lucide-react";
+import { Loader2, User, Phone, Mail, CreditCard, MapPin, Store, Lock, Save, X, Eye, EyeOff } from "lucide-react";
 
 interface SignUpModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ interface SignUpModalProps {
     phone?: string;
     city?: string;
     dealerName?: string;
+    upiId?: string;
   };
   googleScriptUrl: string;
   existingUsers: any[];
@@ -47,6 +48,7 @@ export default function SignUpModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Sync form data when modal opens or initialData changes
   useEffect(() => {
@@ -55,24 +57,29 @@ export default function SignUpModal({
         userName: initialData.name || "",
         phone: initialData.phone || "",
         gmail: "",
-        upiId: initialData.upiId || "", // Use actual UPI ID from form
+        upiId: initialData.upiId || "",
         city: initialData.city || "",
         dealerName: initialData.dealerName || "",
-        pass: "", // Don't pre-fill password
+        pass: "",
       });
       setError("");
       setShowSuccess(false);
+      setShowPassword(false);
     }
   }, [isOpen, initialData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Limit phone to 10 digits
+
+    // Limit phone to 10 digits and auto-set password
     if (name === "phone") {
       const numericValue = value.replace(/\D/g, "");
       if (numericValue.length > 10) return;
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue,
+        pass: numericValue // Auto-set password to phone number
+      }));
       return;
     }
 
@@ -95,14 +102,16 @@ export default function SignUpModal({
   };
 
   const handleSubmit = async () => {
+    // Auto-set password to phone number before validation
+    const finalPassword = formData.phone;
+
     if (
       !formData.userName ||
       !formData.phone ||
       !formData.gmail ||
       !formData.upiId ||
       !formData.city ||
-      !formData.dealerName ||
-      !formData.pass
+      !formData.dealerName
     ) {
       setError("Please fill all fields");
       return;
@@ -121,7 +130,7 @@ export default function SignUpModal({
         serialNo, // A
         formData.userName, // B
         formData.phone, // C
-        formData.pass, // D
+        finalPassword, // D (Password = Phone Number)
         "user", // E (Role)
         formData.gmail, // F
         formData.upiId, // G
@@ -183,12 +192,12 @@ export default function SignUpModal({
                   <div className="h-px bg-slate-200/50 w-full" />
                   <div className="flex justify-between items-center px-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Password:</span>
-                    <span className="text-sm font-bold text-red-600">{formData.pass}</span>
+                    <span className="text-sm font-bold text-red-600">{formData.phone}</span>
                   </div>
                 </div>
                 <div className="pt-1">
                   <Button
-                    onClick={() => onSuccess({ ...formData, name: formData.userName })}
+                    onClick={() => onSuccess({ ...formData, name: formData.userName, pass: formData.phone })}
                     className="w-full h-10 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md font-bold text-sm"
                   >
                     OK
@@ -221,7 +230,7 @@ export default function SignUpModal({
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="Phone"
+                    placeholder="Phone Number"
                     maxLength={10}
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -277,16 +286,37 @@ export default function SignUpModal({
                 </div>
               </div>
 
+              {/* Password Field - Read Only with Show/Hide Toggle */}
               <div className="relative group">
                 <Lock className="absolute w-3.5 h-3.5 transition-colors -translate-y-1/2 left-3 top-1/2 text-slate-300 group-focus-within:text-red-500" />
                 <Input
                   name="pass"
-                  value={formData.pass}
-                  onChange={handleInputChange}
-                  placeholder="Password"
-                  type="password"
-                  className="h-9 pl-9 text-xs border-slate-200 rounded-lg focus:ring-red-500 focus:border-red-500"
+                  value={formData.pass || formData.phone}
+                  onChange={() => { }} // Read-only, no changes allowed
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password (Auto-set to Phone Number)"
+                  readOnly
+                  className="h-9 pl-9 pr-9 text-xs border-slate-200 rounded-lg focus:ring-red-500 focus:border-red-500 bg-slate-50 cursor-not-allowed"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+
+              {/* Info Message */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
+                <p className="text-xs text-blue-700">
+                  <Lock className="w-3 h-3 inline mr-1" />
+                  Password will be your Phone Number
+                </p>
               </div>
             </>
           )}
