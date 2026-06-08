@@ -16,15 +16,15 @@ interface Reward {
 }
 
 function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
   return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
 }
 
@@ -36,7 +36,7 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
     const fetchRewards = async () => {
       try {
         const response = await fetch(
-          `https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec?sheet=Coupons&action=fetch`
+          `https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec?sheet=Coupons&action=fetch`,
         );
         const data = await response.json();
         if (data.success && data.data) {
@@ -50,9 +50,9 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
               status: row[2],
               amount: row[3],
               claimedAt: row[5],
-              makePayment: row[8] || '',
-              remark: row[12] || '',
-              sn: row[13] || '',
+              makePayment: row[8] || "",
+              remark: row[12] || "",
+              sn: row[13] || "",
             }));
           setRewards(userRewards);
         }
@@ -70,8 +70,12 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">My Rewards</h2>
-          <p className="text-slate-500 text-sm">View and track all your claimed rewards</p>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+            My Rewards
+          </h2>
+          <p className="text-slate-500 text-sm">
+            View and track all your claimed rewards
+          </p>
         </div>
       </div>
 
@@ -82,10 +86,15 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
               <div className="p-2 bg-white/20 rounded-lg">
                 <Gift className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full uppercase tracking-wider">Total</span>
+              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full uppercase tracking-wider">
+                <p className="text-3xl font-bold">
+                  ₹
+                  {rewards.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)}
+                </p>
+              </span>
             </div>
-            <p className="text-3xl font-bold">₹{rewards.reduce((acc, r) => acc + (Number(r.amount) || 0), 0)}</p>
-            <p className="text-sm text-red-100 mt-1">Total Rewards Earned</p>
+
+            <p className="text-lg text-red-100 mt-1">No. of coupens</p>
           </CardContent>
         </Card>
 
@@ -96,7 +105,9 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-slate-800">{rewards.length}</p>
+            <p className="text-3xl font-bold text-slate-800">
+              {rewards.length}
+            </p>
             <p className="text-sm text-slate-500 mt-1">Reward Claimed</p>
           </CardContent>
         </Card>
@@ -108,7 +119,13 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
                 <Clock className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-slate-800">{rewards.filter(r => r.makePayment && r.makePayment.trim() !== '').length}</p>
+            <p className="text-3xl font-bold text-slate-800">
+              {
+                rewards.filter(
+                  (r) => r.makePayment && r.makePayment.trim() !== "",
+                ).length
+              }
+            </p>
             <p className="text-sm text-slate-500 mt-1">Reward Received</p>
           </CardContent>
         </Card>
@@ -116,7 +133,9 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
 
       <Card className="border-slate-100 shadow-sm overflow-hidden">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <CardTitle className="text-lg font-bold text-slate-800">Recent Claims</CardTitle>
+          <CardTitle className="text-lg font-bold text-slate-800">
+            Recent Claims
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -133,40 +152,72 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">SN</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Coupon Code</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Remark</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      SN
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Coupon Code
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Remark
+                    </th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {rewards.map((reward, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                    <tr
+                      key={i}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
                       <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-500">{reward.sn || "—"}</span>
+                        <span className="text-sm font-medium text-slate-500">
+                          {reward.sn || "—"}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="text-sm text-slate-600">{formatDate(reward.claimedAt || reward.created)}</span>
+                          <span className="text-sm text-slate-600">
+                            {formatDate(reward.claimedAt || reward.created)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-mono font-bold text-slate-800">{reward.code}</span>
+                        <span className="text-sm font-mono font-bold text-slate-800">
+                          {reward.code}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-red-600">₹{reward.amount}</span>
+                        <span className="text-sm font-bold text-red-600">
+                          ₹{reward.amount}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-sm text-slate-500 italic">{reward.remark || "—"}</span>
+                        <span className="text-sm text-slate-500 italic">
+                          {reward.remark || "—"}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${reward.status === 'used' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                          {reward.status === 'used'
-                            ? (reward.makePayment === 'Done' ? 'Reward Transferred🎉' : 'Used')
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            reward.status === "used"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-orange-100 text-orange-700"
+                          }`}
+                        >
+                          {reward.status === "used"
+                            ? reward.makePayment === "Done"
+                              ? "Reward Transferred🎉"
+                              : "Used"
                             : reward.status}
                         </span>
                       </td>
