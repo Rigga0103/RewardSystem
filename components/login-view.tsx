@@ -28,8 +28,11 @@ export default function LoginView({ onLogin }: LoginViewProps) {
     setError("");
 
     try {
+      // Choose sheet based on login type
+      const sheetName = loginType === "admin" ? "Login" : "userLogin";
+      
       const response = await fetch(
-        `${GOOGLE_SCRIPT_URL}?sheet=Login&action=fetch`
+        `${GOOGLE_SCRIPT_URL}?sheet=${sheetName}&action=fetch`
       );
       const result = await response.json();
 
@@ -37,11 +40,13 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         // Skip header row
         const users = result.data.slice(1);
 
-        // Find matching user
-        // Col B: Name (index 1)
-        // Col C: ID (index 2)
-        // Col D: Password (index 3)
-        // Col E: Role (index 4) - Using E for Role as D is Password
+        // Find matching user based on sheet structure
+        // For both sheets: 
+        // Index 0: Serial No / Additional info
+        // Index 1: Name
+        // Index 2: User ID
+        // Index 3: Password
+        // Index 4: Role (only present in Login sheet for admin, optional in userLogin)
 
         const matchedUser = users.find(
           (row: string[]) =>
@@ -49,25 +54,19 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         );
 
         if (matchedUser) {
-          const userRole = matchedUser[4] || "User";
-
-          // Check if login type matches user role
-          if (loginType === "admin" && userRole !== "Admin") {
-            setError("This user does not have admin privileges");
-          } else if (loginType === "user" && userRole === "Admin") {
-            setError("Please use Admin login for admin accounts");
-          } else {
-            onLogin({
-              name: matchedUser[1],
-              id: matchedUser[2],
-              role: userRole,
-            });
-          }
+          // Set role based on login type
+          const userRole = loginType === "admin" ? "Admin" : "User";
+          
+          onLogin({
+            name: matchedUser[1],  // Name from column B (index 1)
+            id: matchedUser[2],    // ID from column C (index 2)
+            role: userRole,
+          });
         } else {
-          setError("Invalid User ID or Password");
+          setError(`Invalid ${loginType === "admin" ? "Admin" : "User"} ID or Password`);
         }
       } else {
-        setError("Failed to fetch user data");
+        setError(`Failed to fetch ${loginType === "admin" ? "admin" : "user"} data`);
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -108,10 +107,11 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                 setUserId("");
                 setPassword("");
               }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "user"
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                loginType === "user"
                   ? "bg-white text-red-600 shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+              }`}
             >
               <User className="w-4 h-4" />
               User Login
@@ -123,10 +123,11 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                 setUserId("");
                 setPassword("");
               }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "admin"
+              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                loginType === "admin"
                   ? "bg-white text-red-600 shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
+              }`}
             >
               <Shield className="w-4 h-4" />
               Admin Login
