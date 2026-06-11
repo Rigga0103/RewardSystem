@@ -1,19 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Loader2, LogIn, Lock, User, Shield } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
-interface LoginViewProps {
-  onLogin: (user: { name: string; role: string; id: string }) => void;
-}
-
-export default function LoginView({ onLogin }: LoginViewProps) {
-  const [loginType, setLoginType] = useState<"admin" | "user">("user");
+export default function UserLoginPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,11 +26,8 @@ export default function LoginView({ onLogin }: LoginViewProps) {
     setError("");
 
     try {
-      // Choose sheet based on login type
-      const sheetName = loginType === "admin" ? "AdminData" : "UserData";
-
       const response = await fetch(
-        `${GOOGLE_SCRIPT_URL}?sheet=${sheetName}&action=fetch`
+        `${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`
       );
       const result = await response.json();
 
@@ -40,33 +35,27 @@ export default function LoginView({ onLogin }: LoginViewProps) {
         // Skip header row
         const users = result.data.slice(1);
 
-        // Find matching user based on sheet structure
-        // For both sheets: 
-        // Index 0: Serial No / Additional info
-        // Index 1: Name
-        // Index 2: User ID
-        // Index 3: Password
-        // Index 4: Role (only present in Login sheet for admin, optional in userLogin)
-
+        // Find matching user
         const matchedUser = users.find(
           (row: string[]) =>
             row[2]?.toString() === userId && row[3]?.toString() === password
         );
 
         if (matchedUser) {
-          // Set role based on login type
-          const userRole = loginType === "admin" ? "Admin" : "User";
+          const userSession = {
+            name: matchedUser[1], // Name from column B (index 1)
+            id: matchedUser[2],   // ID from column C (index 2)
+            role: "User",
+          };
 
-          onLogin({
-            name: matchedUser[1],  // Name from column B (index 1)
-            id: matchedUser[2],    // ID from column C (index 2)
-            role: userRole,
-          });
+          localStorage.setItem("currentUser", JSON.stringify(userSession));
+          localStorage.setItem("activeView", "rewards");
+          router.push("/");
         } else {
-          setError(`Invalid ${loginType === "admin" ? "Admin" : "User"} ID or Password`);
+          setError("Invalid User ID or Password");
         }
       } else {
-        setError(`Failed to fetch ${loginType === "admin" ? "admin" : "user"} data`);
+        setError("Failed to fetch user authentication data");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -77,8 +66,11 @@ export default function LoginView({ onLogin }: LoginViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white border-0 shadow-xl">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Subtle background dot pattern */}
+      <div className="fixed inset-0 bg-[radial-gradient(#94a3b8_0.5px,transparent_0.5px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
+
+      <Card className="w-full max-w-md bg-white border-0 shadow-xl relative z-10">
         <CardHeader className="text-center pt-8 pb-4">
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden shadow-lg shadow-red-500/20">
             <Image
@@ -86,52 +78,16 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               alt="Logo"
               width={80}
               height={80}
-              className="w-full h-full object-cover"
+              className="w-full.h-full object-cover"
             />
           </div>
           <CardTitle className="text-2xl font-bold text-slate-900">
-            Reward System
+            User Reward Panel
           </CardTitle>
           <p className="text-slate-500 text-sm mt-1">
-            Sign in to access your dashboard
+            Sign in to check and track your rewards
           </p>
         </CardHeader>
-
-        {/* Horizontal Tabs */}
-        <div className="px-8">
-          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6">
-            <button
-              onClick={() => {
-                setLoginType("user");
-                setError("");
-                setUserId("");
-                setPassword("");
-              }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "user"
-                ? "bg-white text-red-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-            >
-              <User className="w-4 h-4" />
-              User Login
-            </button>
-            <button
-              onClick={() => {
-                setLoginType("admin");
-                setError("");
-                setUserId("");
-                setPassword("");
-              }}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${loginType === "admin"
-                ? "bg-white text-red-600 shadow-sm"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-            >
-              <Shield className="w-4 h-4" />
-              Admin Login
-            </button>
-          </div>
-        </div>
 
         <CardContent className="p-8 pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
@@ -141,7 +97,7 @@ export default function LoginView({ onLogin }: LoginViewProps) {
                 <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
                   type="text"
-                  placeholder="Enter your ID"
+                  placeholder="Enter your User ID"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   className="pl-10 h-11 border-slate-200 focus:border-red-500 focus:ring-red-500"
@@ -184,16 +140,26 @@ export default function LoginView({ onLogin }: LoginViewProps) {
               ) : (
                 <>
                   <LogIn className="w-4 h-4 mr-2" />
-                  Sign In as {loginType === "admin" ? "Admin" : "User"}
+                  Sign In
                 </>
               )}
             </Button>
           </form>
+
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+            <Link
+              href="/admin/login"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Are you an Admin? Sign in here
+            </Link>
+          </div>
         </CardContent>
       </Card>
 
       {/* Footer */}
-      <div className="mt-6 text-center">
+      <div className="mt-6 text-center relative z-10">
         <a
           href="https://www.botivate.in"
           target="_blank"

@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec";
+  "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 const COUPONS_SHEET = "Coupons";
 const CONSUMERS_SHEET = "User_Claimed_Coupon";
 
@@ -222,30 +222,35 @@ export default function PremiumTrackingSystem() {
       );
       const result = await response.json();
 
-      if (result.success && result.data) {
+      if (result.success && result.data && result.data.length > 0) {
+        const headers = result.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
+        let snIndex = headers.findIndex((h: string) => 
+          h === "serial no" || 
+          h === "serialno" ||
+          h === "sn" || 
+          h === "sl no" || 
+          h === "sl.no" || 
+          h === "s.no" || 
+          h === "sno"
+        );
+        if (snIndex === -1) {
+          snIndex = 13; // fallback to Column N
+        }
+
         const couponData = result.data
           .slice(1)
           .map((row: any[], index: number) => ({
             id: `coupon_${index + 1}`,
-
-            // Col A (0): Created
-            // Col B (1): Code
-            // Col C (2): Status
-            // Col D (3): Reward
-
             created: row[0] || "",
             generatedAt: row[0] || "",
-
             code: row[1] ? row[1].toString().trim() : "",
             status: (row[2] || "unused").toLowerCase(),
             reward: Number.parseFloat(row[3]) || 0,
-
             claimedBy: row[4] || null,
             claimedAt: row[5] || null,
             phone: row[6] || null,
             upiId: row[7] || null,
-
-            sn: row[13] ? String(row[13]) : "—",
+            sn: row[snIndex] ? String(row[snIndex]) : "—",
             rowIndex: index + 2,
           }))
           .filter(

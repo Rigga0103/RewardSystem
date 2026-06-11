@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import AdminDashboard from "@/components/admin-dashboard";
 import ConsumerInterface from "@/components/consumer-interface";
 import TrackingSystem from "@/components/tracking-system";
-import LoginView from "@/components/login-view";
 import SettingsView from "@/components/settings-view";
 import MakePaymentView from "@/components/make-payment-view";
 import MyRewardsView from "@/components/my-rewards-view";
@@ -30,6 +30,7 @@ interface User {
 }
 
 export default function CouponSystem() {
+  const router = useRouter();
   const [activeView, setActiveView] = useState<
     "admin" | "consumer" | "tracking" | "settings" | "payment" | "rewards" | "profile"
   >("admin");
@@ -42,15 +43,16 @@ export default function CouponSystem() {
     const savedView = localStorage.getItem("activeView");
 
     if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    if (savedView) {
-      setActiveView(
-        savedView as "admin" | "consumer" | "tracking" | "settings" | "payment"
-      );
+      const parsedUser = JSON.parse(savedUser);
+      setCurrentUser(parsedUser);
+      if (savedView) {
+        setActiveView(savedView as any);
+      }
+    } else {
+      router.push("/login");
     }
     setLoading(false);
-  }, []);
+  }, [router]);
 
   // Save active view changes
   useEffect(() => {
@@ -59,29 +61,20 @@ export default function CouponSystem() {
     }
   }, [activeView, currentUser]);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    
-    // Set default view based on role
-    const defaultView = user.role.toLowerCase() === "admin" ? "admin" : "rewards";
-    setActiveView(defaultView);
-    localStorage.setItem("activeView", defaultView);
-  };
-
   const handleLogout = () => {
+    const isAdmin = currentUser?.role?.toLowerCase() === "admin";
     setCurrentUser(null);
-    setActiveView("admin");
     localStorage.removeItem("currentUser");
     localStorage.removeItem("activeView");
+    if (isAdmin) {
+      router.push("/admin/login");
+    } else {
+      router.push("/login");
+    }
   };
 
-  if (loading) {
-    return null; // Or a loading spinner
-  }
-
-  if (!currentUser) {
-    return <LoginView onLogin={handleLogin} />;
+  if (loading || !currentUser) {
+    return null; // Show nothing while checking session or redirecting
   }
 
   return (

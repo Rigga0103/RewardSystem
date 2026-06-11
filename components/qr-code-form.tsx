@@ -64,7 +64,7 @@ export default function QRCodeForm() {
   const [isFetchingUsers, setIsFetchingUsers] = useState<boolean>(false);
 
   const GOOGLE_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec";
+    "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 
   // Fetch coupons on mount
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function QRCodeForm() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    
+
     // Limit phone to 10 digits
     if (name === "phone") {
       const numericValue = value.replace(/\D/g, "");
@@ -322,7 +322,7 @@ export default function QRCodeForm() {
 
   const handleSignUpSuccess = async (userData: any) => {
     setIsSignUpModalOpen(false);
-    
+
     // Pre-fill the form with user details
     setFormData((prev) => ({
       ...prev,
@@ -431,16 +431,16 @@ export default function QRCodeForm() {
 
                 <div
                   className={`flex-1 h-0.5 mx-1.5 rounded-full ${formData.couponCode
-                      ? "bg-gradient-to-r from-red-500 to-red-400"
-                      : "bg-gray-200"
+                    ? "bg-gradient-to-r from-red-500 to-red-400"
+                    : "bg-gray-200"
                     }`}
                 />
 
                 <div className="flex flex-col items-center gap-0.5">
                   <div
                     className={`flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full ${formData.couponCode
-                        ? "bg-gradient-to-br from-red-500 to-red-600 text-white"
-                        : "bg-gray-100 text-gray-400"
+                      ? "bg-gradient-to-br from-red-500 to-red-600 text-white"
+                      : "bg-gray-100 text-gray-400"
                       }`}
                   >
                     2
@@ -533,8 +533,8 @@ export default function QRCodeForm() {
               {message.content && (
                 <div
                   className={`text-center text-xs font-semibold p-3 rounded-xl border ${message.type === "success"
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : "bg-red-50 text-red-600 border-red-200"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-600 border-red-200"
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">

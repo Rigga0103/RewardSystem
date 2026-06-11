@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec";
+  "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 const SHEET_NAME = "Coupons";
 
 interface Coupon {
@@ -125,18 +125,18 @@ const CouponTable = ({
                 <div>
                   <span
                     className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${coupon.status === "used"
-                        ? "bg-green-100 text-green-700"
-                        : coupon.status === "deleted"
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-red-100 text-red-700"
+                      ? "bg-green-100 text-green-700"
+                      : coupon.status === "deleted"
+                        ? "bg-gray-100 text-gray-500"
+                        : "bg-red-100 text-red-700"
                       }`}
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full mr-1.5 ${coupon.status === "used"
-                          ? "bg-green-500"
-                          : coupon.status === "deleted"
-                            ? "bg-gray-400"
-                            : "bg-red-500"
+                        ? "bg-green-500"
+                        : coupon.status === "deleted"
+                          ? "bg-gray-400"
+                          : "bg-red-500"
                         }`}
                     />
                     {coupon.status}
@@ -225,10 +225,10 @@ const CouponTable = ({
                 </div>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${coupon.status === "used"
-                      ? "bg-green-100 text-green-700"
-                      : coupon.status === "deleted"
-                        ? "bg-gray-100 text-gray-500"
-                        : "bg-red-100 text-red-700"
+                    ? "bg-green-100 text-green-700"
+                    : coupon.status === "deleted"
+                      ? "bg-gray-100 text-gray-500"
+                      : "bg-red-100 text-red-700"
                     }`}
                 >
                   {coupon.status}
@@ -336,7 +336,26 @@ export default function PremiumAdminDashboard() {
       );
       const result = await response.json();
 
-      if (result.success && result.data) {
+      if (result.success && result.data && result.data.length > 0) {
+        const headers = result.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
+        let snIndex = headers.findIndex((h: string) => 
+          h === "serial no" || 
+          h === "serialno" ||
+          h === "sn" || 
+          h === "sl no" || 
+          h === "sl.no" || 
+          h === "s.no" || 
+          h === "sno"
+        );
+        if (snIndex === -1) {
+          snIndex = 13; // fallback to Column N
+        }
+
+        let remarkIndex = headers.indexOf("remark");
+        if (remarkIndex === -1) {
+          remarkIndex = 12; // fallback to Column M
+        }
+
         const couponData: Coupon[] = result.data
           .slice(1)
           .map((row: (string | number | null)[], index: number) => ({
@@ -347,8 +366,8 @@ export default function PremiumAdminDashboard() {
             reward: row[3] || 0,
             claimedBy: row[4] || null,
             claimedAt: row[5] || null,
-            remark: row[12] || "",
-            sn: row[13] ? String(row[13]) : "",
+            remark: row[remarkIndex] ? String(row[remarkIndex]) : "",
+            sn: row[snIndex] ? String(row[snIndex]) : "",
             rowIndex: index + 2,
           }))
           .filter((coupon: Coupon) => coupon.code);
@@ -416,17 +435,31 @@ export default function PremiumAdminDashboard() {
 
       const existingCodes = new Set<string>();
       let maxSN = 0;
-      if (result.success && result.data) {
+      if (result.success && result.data && result.data.length > 0) {
+        const headers = result.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
+        let snIndex = headers.findIndex((h: string) => 
+          h === "serial no" || 
+          h === "serialno" ||
+          h === "sn" || 
+          h === "sl no" || 
+          h === "sl.no" || 
+          h === "s.no" || 
+          h === "sno"
+        );
+        if (snIndex === -1) {
+          snIndex = 13; // fallback to Column N
+        }
+
         result.data.slice(1).forEach((row: (string | number | null)[]) => {
           if (row[1]) existingCodes.add(String(row[1]));
-          
+
           // Parse SN format "SN-001" to find max number
-          const snStr = String(row[13] || "");
+          const snStr = String(row[snIndex] || "");
           if (snStr.startsWith("SN-")) {
             const snNum = parseInt(snStr.replace("SN-", ""));
             if (!isNaN(snNum) && snNum > maxSN) maxSN = snNum;
           } else {
-            const snNum = Number(row[13]);
+            const snNum = Number(row[snIndex]);
             if (!isNaN(snNum) && snNum > maxSN) maxSN = snNum;
           }
         });
@@ -454,10 +487,10 @@ export default function PremiumAdminDashboard() {
         existingCodes.add(uniqueCode);
         const snNum = maxSN + i + 1;
         const snFormatted = `SN-${String(snNum).padStart(3, "0")}`;
-        
+
         // Build a 14-element row to reach Column N (index 13)
         const row = [
-          currentDate, uniqueCode, "unused", rewardAmountNum, "", "", 
+          currentDate, uniqueCode, "unused", rewardAmountNum, "", "",
           "", "", "", "", "", "", "", snFormatted
         ];
         newCoupons.push(row);
@@ -718,8 +751,8 @@ export default function PremiumAdminDashboard() {
                 <button
                   onClick={() => setActiveTab("unused")}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "unused"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                     }`}
                 >
                   Unused ({unusedCoupons.length})
@@ -727,8 +760,8 @@ export default function PremiumAdminDashboard() {
                 <button
                   onClick={() => setActiveTab("used")}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTab === "used"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
+                    ? "bg-white text-red-600 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                     }`}
                 >
                   Used ({usedCoupons.length})

@@ -78,7 +78,7 @@ export default function SettingsView() {
 
 
   const GOOGLE_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec";
+    "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -316,7 +316,7 @@ export default function SettingsView() {
               className="pl-9 h-11 border-slate-200 bg-slate-50/50 focus:bg-white focus:ring-red-500/10 focus:border-red-500 rounded-xl text-sm transition-all"
             />
           </div>
-          
+
           <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="h-11 w-11 bg-white border-slate-200 rounded-xl shadow-sm relative">
@@ -340,9 +340,8 @@ export default function SettingsView() {
                       <button
                         key={role}
                         onClick={() => setRoleFilter(role)}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-2 ${
-                          roleFilter === role ? "bg-red-50 border-red-500 text-red-700" : "bg-white border-slate-100 text-slate-500"
-                        }`}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-2 ${roleFilter === role ? "bg-red-50 border-red-500 text-red-700" : "bg-white border-slate-100 text-slate-500"
+                          }`}
                       >
                         {role}
                       </button>
@@ -363,7 +362,7 @@ export default function SettingsView() {
                     </select>
                   </div>
                 </div>
-                <Button 
+                <Button
                   className="w-full h-12 rounded-xl bg-red-600 font-black uppercase tracking-widest"
                   onClick={() => setIsFilterSheetOpen(false)}
                 >

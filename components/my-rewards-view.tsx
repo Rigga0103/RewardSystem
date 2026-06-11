@@ -36,23 +36,38 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
     const fetchRewards = async () => {
       try {
         const response = await fetch(
-          `https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec?sheet=Coupons&action=fetch`,
+          `https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec?sheet=Coupons&action=fetch`,
         );
         const data = await response.json();
-        if (data.success && data.data) {
-          // Headers: Created, Code, Status, Reward, Claimed By, Claimed At, Phone Number, ...
+        if (data.success && data.data && data.data.length > 0) {
+          const headers = data.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
+          
+          let phoneIndex = headers.findIndex((h: string) => h === "phone number" || h === "phone" || h === "mobile" || h === "mobile number");
+          if (phoneIndex === -1) phoneIndex = 6;
+
+          let snIndex = headers.findIndex((h: string) => 
+            h === "serial no" || h === "serialno" || h === "sn" || h === "sl no" || h === "sl.no" || h === "s.no" || h === "sno"
+          );
+          if (snIndex === -1) snIndex = 13;
+
+          let makePaymentIndex = headers.findIndex((h: string) => h === "make payment" || h === "payment status" || h === "payment");
+          if (makePaymentIndex === -1) makePaymentIndex = 8;
+
+          let remarkIndex = headers.indexOf("remark");
+          if (remarkIndex === -1) remarkIndex = 12;
+
           const userRewards = data.data
             .slice(1) // skip headers
-            .filter((row: any) => row[6] === userPhone) // filter by phone number (Col G)
+            .filter((row: any) => String(row[phoneIndex] || "").trim() === String(userPhone).trim())
             .map((row: any) => ({
-              created: row[0],
-              code: row[1],
-              status: row[2],
-              amount: row[3],
-              claimedAt: row[5],
-              makePayment: row[8] || "",
-              remark: row[12] || "",
-              sn: row[13] || "",
+              created: row[0] || "",
+              code: row[1] || "",
+              status: row[2] || "unused",
+              amount: row[3] || 0,
+              claimedAt: row[5] || "",
+              makePayment: row[makePaymentIndex] || "",
+              remark: row[remarkIndex] || "",
+              sn: row[snIndex] || "",
             }));
           setRewards(userRewards);
         }
@@ -103,9 +118,9 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
               </div>
             </div>
             <div className="pl-5">
-              <p className="text-3xl font-bold text-slate-800">
-                <p className="text-xl inline">No. of Coupens</p> {rewards.length}
-              </p>
+              <div className="text-3xl font-bold text-slate-800">
+                <span className="text-xl inline">No. of Coupons</span> {rewards.length}
+              </div>
               <p className="text-sm text-slate-500 mt-1.5 font-medium">
                 Total Amount: <span className="font-bold text-green-600">₹{totalClaimedAmount}</span>
               </p>
@@ -122,9 +137,9 @@ export default function MyRewardsView({ userPhone }: { userPhone: string }) {
               </div>
             </div>
             <div className="pl-5">
-              <p className="text-3xl font-bold text-slate-800">
-                <p className="text-xl inline">No. of Coupens</p>  {receivedRewards.length}
-              </p>
+              <div className="text-3xl font-bold text-slate-800">
+                <span className="text-xl inline">No. of Coupons</span>  {receivedRewards.length}
+              </div>
               <p className="text-sm text-slate-500 mt-1.5 font-medium">
                 Total Amount: <span className="font-bold text-blue-600">₹{totalReceivedAmount}</span>
               </p>

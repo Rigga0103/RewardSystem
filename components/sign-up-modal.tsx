@@ -152,9 +152,25 @@ export default function SignUpModal({
       const result = await response.json();
 
       if (result.success) {
-        setShowSuccess(true);
+        // Also save to UserData sheet
+        const userParams = new FormData();
+        userParams.append("sheetName", "UserData");
+        userParams.append("action", "batchInsert");
+        userParams.append("rowsData", JSON.stringify([rowData]));
+
+        const userResponse = await fetch(googleScriptUrl, {
+          method: "POST",
+          body: userParams,
+        });
+        const userResult = await userResponse.json();
+
+        if (userResult.success) {
+          setShowSuccess(true);
+        } else {
+          setError(userResult.error || "Failed to save data to UserData database");
+        }
       } else {
-        setError(result.error || "Failed to save data");
+        setError(result.error || "Failed to save data to Login database");
       }
     } catch (err) {
       console.error("Sign up error:", err);

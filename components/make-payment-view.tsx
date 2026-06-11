@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 const GOOGLE_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzx7TVAWVJjTrHLWQJ_nKorZy33kuJ5JcYRdQ0vIekPiWrQy1ZXFdmk0wy7EMf_wIpb/exec";
+  "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 const COUPONS_SHEET = "Coupons";
 
 interface PaymentItem {
@@ -86,20 +86,30 @@ export default function MakePaymentView() {
       );
       const result = await response.json();
 
-      if (result.success && result.data) {
+      if (result.success && result.data && result.data.length > 0) {
+        const headers = result.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
+        let snIndex = headers.findIndex((h: string) => 
+          h === "serial no" || 
+          h === "serialno" ||
+          h === "sn" || 
+          h === "sl no" || 
+          h === "sl.no" || 
+          h === "s.no" || 
+          h === "sno"
+        );
+        if (snIndex === -1) {
+          snIndex = 13; // fallback to Column N
+        }
+
+        let remarkIndex = headers.indexOf("remark");
+        if (remarkIndex === -1) {
+          remarkIndex = 12; // fallback to Column M
+        }
+
         const paymentData = result.data
           .slice(1)
           .map((row: any[], index: number) => ({
             id: `payment_${index + 1}`,
-            // Column mapping:
-            // A (0): Created Date
-            // B (1): Code
-            // D (3): Reward
-            // E (4): Claimed By
-            // F (5): Claimed At
-            // G (6): Phone
-            // H (7): UPI ID
-            // I (8): Payment Status
             createdDate: row[0] ? row[0].toString() : "",
             code: row[1] ? row[1].toString().trim() : "",
             reward: Number.parseFloat(row[3]) || 0,
@@ -108,10 +118,10 @@ export default function MakePaymentView() {
             phone: row[6] ? row[6].toString() : "",
             upiId: row[7] ? row[7].toString().trim() : "",
             paymentStatus: row[8] ? row[8].toString().trim() : "",
-            remark: row[12] ? row[12].toString() : "",
-            sn: row[13] ? row[13].toString() : "",
+            remark: row[remarkIndex] ? row[remarkIndex].toString() : "",
+            sn: row[snIndex] ? row[snIndex].toString() : "",
             rowIndex: index + 2, // +2 because of 0-indexing and header row
-            rawRow: row, // Store original row to preserve all column data
+            rawRow: row, // Store original row to preserve all columns
           }));
 
         setAllItems(paymentData);
@@ -760,7 +770,7 @@ export default function MakePaymentView() {
                               ₹{item.reward}
                             </span>
                             <span className="inline-flex mt-1 items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                               {item.paymentStatus === "Done" ? "Paid" : item.paymentStatus}
+                              {item.paymentStatus === "Done" ? "Paid" : item.paymentStatus}
                             </span>
                           </div>
                         </div>
