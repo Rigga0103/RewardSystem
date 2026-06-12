@@ -139,38 +139,21 @@ export default function SignUpModal({
         timestamp, // J
       ];
 
-      const params = new FormData();
-      params.append("sheetName", "Login");
-      params.append("action", "batchInsert");
-      params.append("rowsData", JSON.stringify([rowData]));
+      const userParams = new FormData();
+      userParams.append("sheetName", "UserData");
+      userParams.append("action", "batchInsert");
+      userParams.append("rowsData", JSON.stringify([rowData]));
 
-      const response = await fetch(googleScriptUrl, {
+      const userResponse = await fetch(googleScriptUrl, {
         method: "POST",
-        body: params,
+        body: userParams,
       });
+      const userResult = await userResponse.json();
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Also save to UserData sheet
-        const userParams = new FormData();
-        userParams.append("sheetName", "UserData");
-        userParams.append("action", "batchInsert");
-        userParams.append("rowsData", JSON.stringify([rowData]));
-
-        const userResponse = await fetch(googleScriptUrl, {
-          method: "POST",
-          body: userParams,
-        });
-        const userResult = await userResponse.json();
-
-        if (userResult.success) {
-          setShowSuccess(true);
-        } else {
-          setError(userResult.error || "Failed to save data to UserData database");
-        }
+      if (userResult.success) {
+        setShowSuccess(true);
       } else {
-        setError(result.error || "Failed to save data to Login database");
+        setError(userResult.error || "Failed to save data to UserData database");
       }
     } catch (err) {
       console.error("Sign up error:", err);

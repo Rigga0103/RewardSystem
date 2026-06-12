@@ -91,7 +91,7 @@ export default function QRCodeForm() {
       setIsFetchingUsers(true);
       try {
         const response = await fetch(
-          `${GOOGLE_SCRIPT_URL}?sheet=Login&action=fetch`
+          `${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`
         );
         const data = await response.json();
         if (data.success && data.data) {
@@ -323,19 +323,32 @@ export default function QRCodeForm() {
   const handleSignUpSuccess = async (userData: any) => {
     setIsSignUpModalOpen(false);
 
-    // Pre-fill the form with user details
-    setFormData((prev) => ({
-      ...prev,
-      name: userData.userName || userData.name,
-      phone: userData.phone,
-      upiId: userData.phone, // UPI ID is mobile number as requested
-      city: userData.city,
-      dealerName: userData.dealerName,
-    }));
+    const autoFilledData: FormData = {
+      ...formData,
+      name: userData.userName || userData.name || "",
+      phone: userData.phone || formData.phone,
+      upiId: userData.upiId || userData.phone || formData.phone,
+      city: userData.city || "",
+      dealerName: userData.dealerName || "",
+    };
 
-    // Refresh users list so the next check passes
+    // Pre-fill the form with user details visually
+    setFormData(autoFilledData);
+
+    // Directly claim the reward now that they are registered!
+    const result = await submitToGoogleSheets(autoFilledData);
+
+    if (result.success) {
+      // The submitToGoogleSheets function already handles the success state and shows the reward!
+    } else {
+      setMessage({ type: "error", content: result.message });
+    }
+
+    setIsSubmitting(false);
+
+    // Refresh users list in the background
     try {
-      const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=Login&action=fetch`);
+      const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`);
       const data = await response.json();
       if (data.success && data.data) {
         setFetchedUsers(data.data);
@@ -343,9 +356,6 @@ export default function QRCodeForm() {
     } catch (e) {
       console.error("Error refreshing users:", e);
     }
-
-    setIsSubmitting(false);
-    setMessage({ type: "success", content: "Details saved! Please click 'Claim My Reward' to finish." });
   };
 
   return (

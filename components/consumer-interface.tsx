@@ -1,232 +1,3 @@
-// "use client"
-
-// import { useState, ChangeEvent, FormEvent } from "react"
-// import { Button } from "@/components/ui/button"
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
-// import { Alert, AlertDescription } from "@/components/ui/alert"
-// import { storageUtils } from "@/lib/storage-utils"
-// import type { FormData, Message, Coupon } from "@/components/types/coupon"
-
-// export default function ConsumerInterface() {
-//   const [formData, setFormData] = useState<FormData>({
-//     couponCode: "",
-//     name: "",
-//     phone: "",
-//     email: "",
-//   })
-//   const [message, setMessage] = useState<Message>({ type: "", content: "" })
-//   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-
-//   const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
-//     const { name, value } = e.target
-//     setFormData((prev) => ({
-//       ...prev,
-//       [name]: value,
-//     }))
-//   }
-
-//   const validateForm = (): boolean => {
-//     if (!formData.couponCode.trim()) {
-//       setMessage({ type: "error", content: "Please enter a coupon code" })
-//       return false
-//     }
-//     if (!formData.name.trim()) {
-//       setMessage({ type: "error", content: "Please enter your name" })
-//       return false
-//     }
-//     if (!formData.phone.trim()) {
-//       setMessage({ type: "error", content: "Please enter your phone number" })
-//       return false
-//     }
-//     if (!formData.email.trim()) {
-//       setMessage({ type: "error", content: "Please enter your email" })
-//       return false
-//     }
-//     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-//       setMessage({ type: "error", content: "Please enter a valid email address" })
-//       return false
-//     }
-//     if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
-//       setMessage({ type: "error", content: "Please enter a valid 10-digit phone number" })
-//       return false
-//     }
-//     return true
-//   }
-
-//   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-//     e.preventDefault()
-//     setIsSubmitting(true)
-//     setMessage({ type: "", content: "" })
-
-//     if (!validateForm()) {
-//       setIsSubmitting(false)
-//       return
-//     }
-
-//     // Simulate processing delay
-//     setTimeout(() => {
-//       const result = storageUtils.redeemCoupon(formData.couponCode, {
-//         name: formData.name,
-//         phone: formData.phone,
-//         email: formData.email,
-//       })
-
-//       if (result.success) {
-//         setMessage({
-//           type: "success",
-//           content: `Congratulations! Your coupon has been successfully redeemed. ₹${result.rewardAmount} reward has been credited to your account.`,
-//         })
-//         setFormData({
-//           couponCode: "",
-//           name: "",
-//           phone: "",
-//           email: "",
-//         })
-//       } else {
-//         setMessage({
-//           type: "error",
-//           content: result.message,
-//         })
-//       }
-//       setIsSubmitting(false)
-//     }, 1000)
-//   }
-
-//   const simulateScan = (): void => {
-//     // Simulate scanning a barcode - get a random unused coupon
-//     const coupons = storageUtils.getCoupons()
-//     const unusedCoupons = coupons.filter((c: Coupon) => c.status === "unused")
-
-//     if (unusedCoupons.length > 0) {
-//       const randomCoupon = unusedCoupons[Math.floor(Math.random() * unusedCoupons.length)]
-//       setFormData((prev) => ({
-//         ...prev,
-//         couponCode: randomCoupon.code,
-//       }))
-//       setMessage({
-//         type: "success",
-//         content: "Coupon scanned successfully! Please fill in your details below.",
-//       })
-//     } else {
-//       setMessage({
-//         type: "error",
-//         content: "No unused coupons available for scanning simulation.",
-//       })
-//     }
-//   }
-
-//   return (
-//     <div className="max-w-2xl mx-auto space-y-6">
-//       <Card>
-//         <CardHeader className="text-center">
-//           <CardTitle className="text-2xl">Claim Your Reward</CardTitle>
-//           <p className="text-muted-foreground">
-//             Scan your coupon barcode or enter the code manually to claim your ₹100 reward
-//           </p>
-//         </CardHeader>
-//         <CardContent>
-//           <div className="space-y-4">
-//             {/* Simulate Barcode Scan */}
-//             <div className="text-center">
-//               <Button onClick={simulateScan} variant="outline" className="mb-4 bg-transparent">
-//                 📱 Simulate Barcode Scan
-//               </Button>
-//               <p className="text-sm text-muted-foreground">
-//                 Click above to simulate scanning a barcode (for demo purposes)
-//               </p>
-//             </div>
-
-//             {/* Redemption Form */}
-//             <form onSubmit={handleSubmit} className="space-y-4">
-//               <div>
-//                 <Label htmlFor="couponCode">Coupon Code *</Label>
-//                 <Input
-//                   id="couponCode"
-//                   name="couponCode"
-//                   value={formData.couponCode}
-//                   onChange={handleInputChange}
-//                   placeholder="Enter coupon code (e.g., WIN100-00001)"
-//                   className="font-mono"
-//                 />
-//               </div>
-
-//               <div>
-//                 <Label htmlFor="name">Full Name *</Label>
-//                 <Input
-//                   id="name"
-//                   name="name"
-//                   value={formData.name}
-//                   onChange={handleInputChange}
-//                   placeholder="Enter your full name"
-//                 />
-//               </div>
-
-//               <div>
-//                 <Label htmlFor="phone">Phone Number *</Label>
-//                 <Input
-//                   id="phone"
-//                   name="phone"
-//                   value={formData.phone}
-//                   onChange={handleInputChange}
-//                   placeholder="Enter your 10-digit phone number"
-//                 />
-//               </div>
-
-//               <div>
-//                 <Label htmlFor="email">Email Address *</Label>
-//                 <Input
-//                   id="email"
-//                   name="email"
-//                   type="email"
-//                   value={formData.email}
-//                   onChange={handleInputChange}
-//                   placeholder="Enter your email address"
-//                 />
-//               </div>
-
-//               <Button type="submit" className="w-full" disabled={isSubmitting}>
-//                 {isSubmitting ? "Processing..." : "Claim Reward"}
-//               </Button>
-//             </form>
-
-//             {/* Message Display */}
-//             {message.content && (
-//               <Alert className={message.type === "error" ? "border-destructive" : "border-green-500"}>
-//                 <AlertDescription className={message.type === "error" ? "text-destructive" : "text-green-700"}>
-//                   {message.content}
-//                 </AlertDescription>
-//               </Alert>
-//             )}
-//           </div>
-//         </CardContent>
-//       </Card>
-
-//       {/* Instructions */}
-//       <Card>
-//         <CardHeader>
-//           <CardTitle className="text-lg">How to Use</CardTitle>
-//         </CardHeader>
-//         <CardContent>
-//           <div className="space-y-2 text-sm text-muted-foreground">
-//             <p>1. Scan the barcode on your coupon using the simulate button above</p>
-//             <p>2. Fill in your personal details in the form</p>
-//             <p>3. Click "Claim Reward" to redeem your coupon</p>
-//             <p>4. Each coupon can only be used once</p>
-//             <p>5. You will receive a confirmation message upon successful redemption</p>
-//           </div>
-//         </CardContent>
-//       </Card>
-//     </div>
-//   )
-// }
-
-
-
-
-
-
 "use client"
 
 import { useState, ChangeEvent, FormEvent } from "react"
@@ -235,18 +6,40 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { storageUtils } from "@/lib/storage-utils"
 import type { FormData, Message, Coupon } from "@/components/types/coupon"
+
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec";
 
 export default function PremiumConsumerInterface() {
   const [formData, setFormData] = useState<FormData>({
     couponCode: "",
-    name: "",
+    name: "", // We still keep this in state for redemption compatibility
     phone: "",
-    email: "",
+    email: "", // We keep this to avoid breaking storageUtils
   })
+  
+  const [regData, setRegData] = useState({
+    userName: "",
+    pass: "",
+    gmail: "",
+    upiId: "",
+    city: "",
+    dealerName: "",
+  })
+
   const [message, setMessage] = useState<Message>({ type: "", content: "" })
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isRegistering, setIsRegistering] = useState<boolean>(false)
+  const [showRegModal, setShowRegModal] = useState<boolean>(false)
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target
@@ -256,25 +49,21 @@ export default function PremiumConsumerInterface() {
     }))
   }
 
-  const validateForm = (): boolean => {
+  const handleRegInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const { name, value } = e.target
+    setRegData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const validatePrimaryForm = (): boolean => {
     if (!formData.couponCode.trim()) {
       setMessage({ type: "error", content: "Please enter a coupon code" })
       return false
     }
-    if (!formData.name.trim()) {
-      setMessage({ type: "error", content: "Please enter your name" })
-      return false
-    }
     if (!formData.phone.trim()) {
       setMessage({ type: "error", content: "Please enter your phone number" })
-      return false
-    }
-    if (!formData.email.trim()) {
-      setMessage({ type: "error", content: "Please enter your email" })
-      return false
-    }
-    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      setMessage({ type: "error", content: "Please enter a valid email address" })
       return false
     }
     if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
@@ -284,47 +73,172 @@ export default function PremiumConsumerInterface() {
     return true
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const validateRegForm = (): boolean => {
+    if (!regData.userName.trim()) return false
+    if (!regData.pass.trim()) return false
+    return true
+  }
+
+  const processRedemption = (name: string, email: string) => {
+    const result = storageUtils.redeemCoupon(formData.couponCode, {
+      name: name || "User",
+      phone: formData.phone,
+      email: email || "user@example.com",
+    })
+
+    if (result.success) {
+      setMessage({
+        type: "success",
+        content: `Congratulations! Your coupon has been successfully redeemed. ₹${result.rewardAmount} reward has been credited to your account.`,
+      })
+      setFormData({
+        couponCode: "",
+        name: "",
+        phone: "",
+        email: "",
+      })
+    } else {
+      setMessage({
+        type: "error",
+        content: result.message,
+      })
+    }
+  }
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     setMessage({ type: "", content: "" })
 
-    if (!validateForm()) {
+    if (!validatePrimaryForm()) {
       setIsSubmitting(false)
       return
     }
 
-    // Simulate processing delay
-    setTimeout(() => {
-      const result = storageUtils.redeemCoupon(formData.couponCode, {
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-      })
+    // Check if the coupon code is even valid before hitting the Google API
+    const coupons = storageUtils.getCoupons()
+    const couponIndex = coupons.findIndex((coupon) => coupon.code === formData.couponCode)
 
-      if (result.success) {
-        setMessage({
-          type: "success",
-          content: `Congratulations! Your coupon has been successfully redeemed. ₹${result.rewardAmount} reward has been credited to your account.`,
-        })
-        setFormData({
-          couponCode: "",
-          name: "",
-          phone: "",
-          email: "",
-        })
-      } else {
-        setMessage({
-          type: "error",
-          content: result.message,
-        })
-      }
+    if (couponIndex === -1) {
+      setMessage({ type: "error", content: "Invalid coupon code. Please check and try again." })
       setIsSubmitting(false)
-    }, 1000)
+      return
+    }
+    if (coupons[couponIndex].status === "used") {
+      setMessage({ type: "error", content: "This coupon has already been used and cannot be redeemed again." })
+      setIsSubmitting(false)
+      return
+    }
+
+    try {
+      // 1. Fetch UserData to check if phone exists
+      const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`);
+      const result = await response.json();
+      
+      let userFound = false;
+      let existingName = "";
+      let existingEmail = "";
+
+      if (result.success && result.data) {
+        // Find by phone (ID is column C / index 2)
+        const foundRow = result.data.slice(1).find((row: string[]) => String(row[2] || "") === formData.phone);
+        if (foundRow) {
+          userFound = true;
+          existingName = String(foundRow[1] || "");
+          existingEmail = String(foundRow[5] || "");
+        }
+      }
+
+      if (userFound) {
+        // User exists! Claim reward immediately.
+        processRedemption(existingName, existingEmail);
+      } else {
+        // Not found, open registration modal
+        setShowRegModal(true);
+      }
+    } catch (error) {
+      console.error("Error verifying user:", error);
+      setMessage({ type: "error", content: "Could not verify your account. Please try again later." });
+    }
+
+    setIsSubmitting(false)
+  }
+
+  const handleRegistrationSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validateRegForm()) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+    
+    setIsRegistering(true);
+
+    try {
+      // Fetch latest SN prefix
+      const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`);
+      const result = await response.json();
+      let maxNum = 0;
+      if (result.success && result.data) {
+        result.data.slice(1).forEach((row: string[]) => {
+          const match = String(row[0] || "").match(/SN-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNum) maxNum = num;
+          }
+        });
+      }
+      
+      const nextNum = maxNum + 1;
+      const serialNo = `SN-${String(nextNum).padStart(3, "0")}`;
+      const now = new Date();
+      const timestamp = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+
+      const rowData = [
+        serialNo, 
+        regData.userName, 
+        formData.phone, // using the phone they entered
+        regData.pass, 
+        "User", 
+        regData.gmail, 
+        regData.upiId, 
+        regData.city, 
+        regData.dealerName, 
+        timestamp
+      ];
+
+      const submitParams = new URLSearchParams({
+        sheetName: "UserData",
+        action: "insert",
+        rowData: JSON.stringify(rowData),
+      });
+
+      const saveRes = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: submitParams.toString(),
+      });
+      const saveResult = await saveRes.json();
+
+      if (saveResult.success) {
+        setShowRegModal(false);
+        // Process redemption immediately after successful registration
+        processRedemption(regData.userName, regData.gmail);
+        // Reset reg form
+        setRegData({
+          userName: "", pass: "", gmail: "", upiId: "", city: "", dealerName: ""
+        });
+      } else {
+        alert("Registration failed: " + saveResult.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred during registration.");
+    } finally {
+      setIsRegistering(false);
+    }
   }
 
   const simulateScan = (): void => {
-    // Simulate scanning a barcode - get a random unused coupon
     const coupons = storageUtils.getCoupons()
     const unusedCoupons = coupons.filter((c: Coupon) => c.status === "unused")
 
@@ -336,7 +250,7 @@ export default function PremiumConsumerInterface() {
       }))
       setMessage({
         type: "success",
-        content: "Coupon scanned successfully! Please fill in your details below.",
+        content: "Coupon scanned successfully! Please fill in your phone number.",
       })
     } else {
       setMessage({
@@ -349,8 +263,7 @@ export default function PremiumConsumerInterface() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-gray-50 to-stone-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto space-y-8">
-    
-
+        
         {/* Main Card */}
         <Card className="border-0 shadow-2xl bg-white rounded-3xl overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400"></div>
@@ -376,6 +289,7 @@ export default function PremiumConsumerInterface() {
                 </div>
                 <Button 
                   onClick={simulateScan}
+                  type="button"
                   className="mb-4 px-8 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   Simulate Barcode Scan
@@ -401,47 +315,16 @@ export default function PremiumConsumerInterface() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
-                      Full Name *
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Enter your full name"
-                      className="border-gray-200 rounded-xl py-4 px-4 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
-                      Phone Number *
-                    </Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Enter your 10-digit phone number"
-                      className="border-gray-200 rounded-xl py-4 px-4 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200"
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-                    Email Address *
+                  <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
+                    Phone Number (ID) *
                   </Label>
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="Enter your email address"
+                    placeholder="Enter your 10-digit phone number"
                     className="border-gray-200 rounded-xl py-4 px-4 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200"
                   />
                 </div>
@@ -454,7 +337,7 @@ export default function PremiumConsumerInterface() {
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-3">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Processing...
+                      Verifying...
                     </span>
                   ) : (
                     "Claim Reward"
@@ -499,8 +382,8 @@ export default function PremiumConsumerInterface() {
             <div className="space-y-4">
               {[
                 "Scan the barcode on your coupon using the simulate button above",
-                "Fill in your personal details in the form",
-                "Click \"Claim Reward\" to redeem your coupon",
+                "Enter your phone number to verify your identity",
+                "If you are not registered, you will be asked to create an account",
                 "Each coupon can only be used once",
                 "You will receive a confirmation message upon successful redemption"
               ].map((step, index) => (
@@ -514,14 +397,88 @@ export default function PremiumConsumerInterface() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Footer */}
-        <div className="text-center py-4">
-          <p className="text-xs text-gray-500">
-            Secure • Fast • Reliable
-          </p>
-        </div>
       </div>
+
+      {/* Registration Dialog */}
+      <Dialog open={showRegModal} onOpenChange={setShowRegModal}>
+        <DialogContent className="max-w-md bg-white rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800">
+              Create New Account
+            </DialogTitle>
+            <DialogDescription className="text-gray-500">
+              Your phone number was not found. Please register to claim your reward.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleRegistrationSubmit} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="regUserName" className="text-sm font-semibold">Name *</Label>
+              <Input
+                id="regUserName" name="userName"
+                value={regData.userName} onChange={handleRegInputChange}
+                required placeholder="Full Name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Phone Number (ID)</Label>
+              <Input value={formData.phone} disabled className="bg-gray-100" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="regPass" className="text-sm font-semibold">Password *</Label>
+                <Input
+                  id="regPass" name="pass"
+                  value={regData.pass} onChange={handleRegInputChange}
+                  required placeholder="Password" type="password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="regGmail" className="text-sm font-semibold">Email</Label>
+                <Input
+                  id="regGmail" name="gmail"
+                  value={regData.gmail} onChange={handleRegInputChange}
+                  placeholder="Email" type="email"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="regUpi" className="text-sm font-semibold">UPI ID</Label>
+                <Input
+                  id="regUpi" name="upiId"
+                  value={regData.upiId} onChange={handleRegInputChange}
+                  placeholder="UPI ID"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="regCity" className="text-sm font-semibold">City</Label>
+                <Input
+                  id="regCity" name="city"
+                  value={regData.city} onChange={handleRegInputChange}
+                  placeholder="City"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regDealer" className="text-sm font-semibold">Dealer Name</Label>
+              <Input
+                id="regDealer" name="dealerName"
+                value={regData.dealerName} onChange={handleRegInputChange}
+                placeholder="Dealer Name"
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl mt-6"
+              disabled={isRegistering}
+            >
+              {isRegistering ? "Registering & Claiming..." : "Register & Claim Reward"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

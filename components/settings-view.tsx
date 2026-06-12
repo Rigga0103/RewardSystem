@@ -39,7 +39,7 @@ import {
 interface User {
   serialNo: string;
   userName: string;
-  phone: string;
+  id: string;
   pass: string;
   role: string;
   gmail: string;
@@ -55,16 +55,19 @@ export default function SettingsView() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // View State
+  const [viewType, setViewType] = useState<"Admin" | "User">("Admin");
+
   // Form State
   const [formData, setFormData] = useState({
     userName: "",
-    phone: "",
+    id: "",
     gmail: "",
     upiId: "",
     city: "",
     dealerName: "",
     pass: "",
-    role: "User",
+    role: "Admin",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingSerial, setEditingSerial] = useState("");
@@ -83,23 +86,24 @@ export default function SettingsView() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      const sheetName = viewType === "Admin" ? "AdminData" : "UserData";
       const response = await fetch(
-        `${GOOGLE_SCRIPT_URL}?sheet=Login&action=fetch`
+        `${GOOGLE_SCRIPT_URL}?sheet=${sheetName}&action=fetch`
       );
       const result = await response.json();
       if (result.success && result.data) {
         const parsedUsers = result.data
           .slice(1)
           .map((row: string[], index: number) => ({
-            serialNo: row[0] || "",
-            userName: row[1] || "",
-            phone: row[2] || "",
-            pass: row[3] || "",
-            role: row[4] || "",
-            gmail: row[5] || "",
-            upi: row[6] || "",
-            city: row[7] || "",
-            dealer: row[8] || "",
+            serialNo: String(row[0] || ""),
+            userName: String(row[1] || ""),
+            id: String(row[2] || ""),
+            pass: String(row[3] || ""),
+            role: String(row[4] || ""),
+            gmail: String(row[5] || ""),
+            upi: viewType === "Admin" ? "" : String(row[6] || ""),
+            city: viewType === "Admin" ? "" : String(row[7] || ""),
+            dealer: viewType === "Admin" ? "" : String(row[8] || ""),
             rowIndex: index + 2,
           }));
         setUsers(parsedUsers);
@@ -113,7 +117,7 @@ export default function SettingsView() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [viewType]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -124,41 +128,42 @@ export default function SettingsView() {
     try {
       let serialNo = editingSerial;
       let action = "update";
+      let rowIndex = "";
 
       if (!isEditing) {
         let maxNum = 0;
+        const prefix = viewType === "Admin" ? "AD-" : "SN-";
+        const regex = viewType === "Admin" ? /AD-(\d+)/ : /SN-(\d+)/;
         users.forEach((user) => {
-          const match = user.serialNo.match(/SN-(\d+)/);
+          const match = user.serialNo.match(regex);
           if (match) {
             const num = parseInt(match[1]);
             if (num > maxNum) maxNum = num;
           }
         });
         const nextNum = maxNum + 1;
-        serialNo = `SN-${String(nextNum).padStart(3, "0")}`;
+        serialNo = `${prefix}${String(nextNum).padStart(3, "0")}`;
         action = "insert";
+      } else {
+        const userToEdit = users.find(u => u.serialNo === editingSerial);
+        if (userToEdit) {
+          rowIndex = userToEdit.rowIndex.toString();
+        }
       }
 
       const now = new Date();
-      const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}/${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      const timestamp = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+
+      const sheetName = viewType === "Admin" ? "AdminData" : "UserData";
+      const rowData = viewType === "Admin"
+        ? [serialNo, formData.userName, formData.id, formData.pass, viewType, formData.gmail, timestamp]
+        : [serialNo, formData.userName, formData.id, formData.pass, viewType, formData.gmail, formData.upiId, formData.city, formData.dealerName, timestamp];
 
       const submitParams = new URLSearchParams({
-        sheetName: "Login",
+        sheetName: sheetName,
         action: action,
-        matchColumn: "A",
-        matchValue: serialNo,
-        rowData: JSON.stringify([
-          serialNo,
-          formData.userName,
-          formData.phone,
-          formData.pass,
-          formData.role,
-          formData.gmail,
-          formData.upiId,
-          formData.city,
-          formData.dealerName,
-          timestamp,
-        ]),
+        rowIndex: rowIndex,
+        rowData: JSON.stringify(rowData),
       });
 
       const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -186,13 +191,13 @@ export default function SettingsView() {
   const resetForm = () => {
     setFormData({
       userName: "",
-      phone: "",
+      id: "",
       gmail: "",
       upiId: "",
       city: "",
       dealerName: "",
       pass: "",
-      role: "User",
+      role: viewType,
     });
     setIsEditing(false);
     setEditingSerial("");
@@ -201,28 +206,28 @@ export default function SettingsView() {
   const handleEditClick = (user: User) => {
     setFormData({
       userName: user.userName,
-      phone: user.phone,
+      id: user.id,
       gmail: user.gmail,
       upiId: user.upi,
       city: user.city,
       dealerName: user.dealer,
       pass: user.pass,
-      role: user.role,
+      role: viewType,
     });
     setIsEditing(true);
     setEditingSerial(user.serialNo);
     setIsDialogOpen(true);
   };
 
-  const handleDeleteUser = async (serialNo: string) => {
+  const handleDeleteUser = async (userToDelete: User) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
     setIsLoading(true);
     try {
+      const sheetName = viewType === "Admin" ? "AdminData" : "UserData";
       const submitParams = new URLSearchParams({
-        sheetName: "Login",
+        sheetName: sheetName,
         action: "delete",
-        matchColumn: "A",
-        matchValue: serialNo,
+        rowIndex: userToDelete.rowIndex.toString(),
       });
       const response = await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
@@ -240,9 +245,12 @@ export default function SettingsView() {
   };
 
   const filteredUsers = users.filter((user) => {
+    // Only show users that match the current viewType
+    if (user.role !== viewType) return false;
+
     const matchesSearch =
       String(user.userName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      String(user.phone || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(user.id || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       String(user.serialNo || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       String(user.gmail || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       String(user.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -265,13 +273,12 @@ export default function SettingsView() {
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            value={viewType}
+            onChange={(e) => setViewType(e.target.value as "Admin" | "User")}
             className="w-full h-9 pl-9 pr-3 rounded-md border border-slate-200 bg-white text-xs appearance-none focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm font-bold text-slate-700"
           >
-            <option value="All">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="User">User</option>
+            <option value="Admin">Admin Table</option>
+            <option value="User">User Table</option>
           </select>
         </div>
         <div className="relative">
@@ -334,16 +341,16 @@ export default function SettingsView() {
               </SheetHeader>
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Account Role</Label>
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-slate-400">View Type</Label>
                   <div className="flex gap-2">
-                    {["All", "Admin", "User"].map((role) => (
+                    {["Admin", "User"].map((role) => (
                       <button
                         key={role}
-                        onClick={() => setRoleFilter(role)}
-                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-2 ${roleFilter === role ? "bg-red-50 border-red-500 text-red-700" : "bg-white border-slate-100 text-slate-500"
+                        onClick={() => setViewType(role as "Admin" | "User")}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-2 ${viewType === role ? "bg-red-50 border-red-500 text-red-700" : "bg-white border-slate-100 text-slate-500"
                           }`}
                       >
-                        {role}
+                        {role} Table
                       </button>
                     ))}
                   </div>
@@ -405,24 +412,17 @@ export default function SettingsView() {
             </DialogHeader>
 
             <div className="space-y-5 max-h-[65vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
-              {/* Role Selector */}
+              {/* Role Selector (Disabled, set by viewType) */}
               <div className="space-y-2">
                 <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">Account Role</Label>
                 <div className="relative">
                   <Shield className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${formData.role === "Admin" ? "text-red-500" : "text-blue-500"}`} />
-                  <select
+                  <Input
                     name="role"
                     value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className={`flex h-11 w-full rounded-xl border-2 pl-10 pr-3 py-1 text-sm shadow-sm transition-all focus:outline-none font-bold appearance-none ${formData.role === "Admin" ? "border-red-100 bg-red-50/30 text-red-700 focus:border-red-500" : "border-blue-100 bg-blue-50/30 text-blue-700 focus:border-blue-500"
-                      }`}
-                  >
-                    <option value="User">Standard User</option>
-                    <option value="Admin">Administrator</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <Filter className="w-3 h-3 text-slate-400" />
-                  </div>
+                    disabled
+                    className={`pl-10 h-11 rounded-xl border-2 text-sm shadow-sm font-bold ${formData.role === "Admin" ? "border-red-100 bg-red-50/30 text-red-700" : "border-blue-100 bg-blue-50/30 text-blue-700"}`}
+                  />
                 </div>
               </div>
 
@@ -436,10 +436,10 @@ export default function SettingsView() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">Phone Number</Label>
+                  <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">ID / Phone Number</Label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">+91</div>
-                    <Input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="9999900000" maxLength={10} className="pl-12 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">ID</div>
+                    <Input name="id" value={formData.id} onChange={handleInputChange} placeholder="ID or Phone" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
                   </div>
                 </div>
               </div>
@@ -453,25 +453,27 @@ export default function SettingsView() {
                     <Input name="gmail" value={formData.gmail} onChange={handleInputChange} placeholder="name@gmail.com" type="email" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">UPI Identity</Label>
-                  <div className="relative">
-                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input name="upiId" value={formData.upiId} onChange={handleInputChange} placeholder="username@upi" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
+                {viewType !== "Admin" && (
+                  <div className="space-y-2">
+                    <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">UPI Identity</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input name="upiId" value={formData.upiId} onChange={handleInputChange} placeholder="username@upi" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Location & Dealer Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">Current City</Label>
-                  <div className="relative">
-                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="City Name" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
+              {viewType !== "Admin" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">Current City</Label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="City Name" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
+                    </div>
                   </div>
-                </div>
-                {formData.role !== "Admin" && (
                   <div className="space-y-2">
                     <Label className="text-[11px] uppercase font-black tracking-widest text-slate-400 ml-1">Dealer Reference</Label>
                     <div className="relative">
@@ -479,8 +481,8 @@ export default function SettingsView() {
                       <Input name="dealerName" value={formData.dealerName} onChange={handleInputChange} placeholder="Dealer Name" className="pl-10 h-11 rounded-xl border-slate-200 bg-white focus:ring-red-500 focus:border-red-500" />
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Security Section */}
               <div className="space-y-2">
@@ -526,12 +528,16 @@ export default function SettingsView() {
                   <tr>
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Serial NO</th>
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">User Name</th>
-                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Phone</th>
+                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">ID</th>
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Role</th>
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Gmail</th>
-                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">UPI ID</th>
-                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">City</th>
-                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Dealer</th>
+                    {viewType !== "Admin" && (
+                      <>
+                        <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">UPI ID</th>
+                        <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">City</th>
+                        <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Dealer</th>
+                      </>
+                    )}
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Pass</th>
                     <th className="sticky top-0 right-0 z-[60] bg-slate-50 border-b border-l border-slate-100 px-4 py-3 text-right text-xs font-bold text-slate-600 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Action</th>
                   </tr>
@@ -546,19 +552,23 @@ export default function SettingsView() {
                       <tr key={user.serialNo} className="text-xs group hover:bg-slate-50/50 transition-colors">
                         <td className="px-4 py-3 border-b border-slate-50 font-mono font-bold text-slate-400">{user.serialNo}</td>
                         <td className="px-4 py-3 border-b border-slate-50 font-bold text-slate-800">{user.userName}</td>
-                        <td className="px-4 py-3 border-b border-slate-50 font-medium text-slate-600">{user.phone}</td>
+                        <td className="px-4 py-3 border-b border-slate-50 font-medium text-slate-600">{user.id}</td>
                         <td className="px-4 py-3 border-b border-slate-50">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${user.role.toLowerCase() === "admin" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"}`}>{user.role}</span>
                         </td>
                         <td className="px-4 py-3 border-b border-slate-50 text-slate-500">{user.gmail}</td>
-                        <td className="px-4 py-3 border-b border-slate-50 text-slate-500 font-mono">{user.upi}</td>
-                        <td className="px-4 py-3 border-b border-slate-50 text-slate-500">{user.city}</td>
-                        <td className="px-4 py-3 border-b border-slate-50 text-slate-500">{user.dealer || "-"}</td>
+                        {viewType !== "Admin" && (
+                          <>
+                            <td className="px-4 py-3 border-b border-slate-50 text-slate-500 font-mono">{user.upi}</td>
+                            <td className="px-4 py-3 border-b border-slate-50 text-slate-500">{user.city}</td>
+                            <td className="px-4 py-3 border-b border-slate-50 text-slate-500">{user.dealer || "-"}</td>
+                          </>
+                        )}
                         <td className="px-4 py-3 border-b border-slate-50"><PasswordCell password={user.pass} /></td>
                         <td className="sticky right-0 z-10 bg-white border-l border-b border-slate-50 px-4 py-3 text-right shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-slate-50/80 transition-colors">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(user)} className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Settings className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user.serialNo)} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(user)} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
                           </div>
                         </td>
                       </tr>
@@ -619,8 +629,10 @@ export default function SettingsView() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-[8px] text-slate-300 uppercase font-black tracking-widest">{user.city}</p>
-                          <p className="text-[11px] text-slate-600 font-black mt-0.5">{user.phone}</p>
+                          {viewType !== "Admin" && (
+                            <p className="text-[8px] text-slate-300 uppercase font-black tracking-widest">{user.city}</p>
+                          )}
+                          <p className="text-[11px] text-slate-600 font-black mt-0.5">{user.id}</p>
                         </div>
                       </div>
 
@@ -635,7 +647,7 @@ export default function SettingsView() {
                             </div>
                           </div>
                         )}
-                        {user.upi && (
+                        {viewType !== "Admin" && user.upi && (
                           <div className="flex items-center gap-2">
                             <span className="text-[8px] font-black text-slate-300 uppercase w-10">UPI ID</span>
                             <div className="flex-1 flex items-center gap-1.5 min-w-0">
@@ -653,16 +665,18 @@ export default function SettingsView() {
                             <Settings className="w-3.5 h-3.5" />
                             <span className="text-[9px] font-black uppercase">Edit</span>
                           </Button>
-                          <Button variant="secondary" size="sm" onClick={() => handleDeleteUser(user.serialNo)} className="h-8 w-8 p-0 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border-none shadow-sm active:scale-95 transition-all">
+                          <Button variant="secondary" size="sm" onClick={() => handleDeleteUser(user)} className="h-8 w-8 p-0 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border-none shadow-sm active:scale-95 transition-all">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
-                        <div className="text-right">
-                          <span className="text-[7px] text-slate-300 uppercase font-black tracking-widest block mb-0.5">Dealer Ref</span>
-                          <span className="text-[10px] text-slate-500 font-bold truncate max-w-[100px] block italic bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                            {user.dealer || "Not Assigned"}
-                          </span>
-                        </div>
+                        {viewType !== "Admin" && (
+                          <div className="text-right">
+                            <span className="text-[7px] text-slate-300 uppercase font-black tracking-widest block mb-0.5">Dealer Ref</span>
+                            <span className="text-[10px] text-slate-500 font-bold truncate max-w-[100px] block italic bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                              {user.dealer || "Not Assigned"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
