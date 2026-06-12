@@ -323,30 +323,35 @@ export default function QRCodeForm() {
   const handleSignUpSuccess = async (userData: any) => {
     setIsSignUpModalOpen(false);
 
-    const autoFilledData: FormData = {
-      ...formData,
+    // Pre-fill the form with user details visually
+    setFormData((prev) => ({
+      ...prev,
       name: userData.userName || userData.name || "",
       phone: userData.phone || formData.phone,
       upiId: userData.upiId || userData.phone || formData.phone,
       city: userData.city || "",
       dealerName: userData.dealerName || "",
-    };
+    }));
 
-    // Pre-fill the form with user details visually
-    setFormData(autoFilledData);
+    // Add the new user locally so the next click works immediately
+    const newUserRow = [
+      "SN-XXX", // Serial No (placeholder, doesn't matter for validation)
+      userData.userName || userData.name || "", // Name [1]
+      userData.phone || formData.phone, // Phone [2]
+      "", // Pass [3]
+      "user", // Role [4]
+      "", // Gmail [5]
+      userData.upiId || userData.phone || formData.phone, // UPI [6]
+      userData.city || "", // City [7]
+      userData.dealerName || "", // Dealer Name [8]
+    ];
 
-    // Directly claim the reward now that they are registered!
-    const result = await submitToGoogleSheets(autoFilledData);
-
-    if (result.success) {
-      // The submitToGoogleSheets function already handles the success state and shows the reward!
-    } else {
-      setMessage({ type: "error", content: result.message });
-    }
+    setFetchedUsers((prev) => [...prev, newUserRow]);
 
     setIsSubmitting(false);
+    setMessage({ type: "success", content: "Details saved! Please click 'Claim My Reward' to finish." });
 
-    // Refresh users list in the background
+    // Refresh users list in the background to ensure it is perfectly in sync
     try {
       const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=UserData&action=fetch`);
       const data = await response.json();
