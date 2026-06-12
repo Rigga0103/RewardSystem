@@ -46,6 +46,7 @@ interface User {
   upi: string;
   city: string;
   dealer: string;
+  timestamp: string;
   rowIndex: number;
 }
 
@@ -104,6 +105,7 @@ export default function SettingsView() {
             upi: viewType === "Admin" ? "" : String(row[6] || ""),
             city: viewType === "Admin" ? "" : String(row[7] || ""),
             dealer: viewType === "Admin" ? "" : String(row[8] || ""),
+            timestamp: viewType === "Admin" ? String(row[6] || "") : String(row[9] || ""),
             rowIndex: index + 2,
           }));
         setUsers(parsedUsers);
@@ -245,8 +247,8 @@ export default function SettingsView() {
   };
 
   const filteredUsers = users.filter((user) => {
-    // Only show users that match the current viewType
-    if (user.role !== viewType) return false;
+    // Only show users that match the current viewType (case-insensitive)
+    if (String(user.role || "").toLowerCase() !== String(viewType || "").toLowerCase()) return false;
 
     const matchesSearch =
       String(user.userName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -256,7 +258,7 @@ export default function SettingsView() {
       String(user.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       String(user.dealer || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesRole = roleFilter === "All" || user.role === roleFilter;
+    const matchesRole = roleFilter === "All" || String(user.role || "").toLowerCase() === String(roleFilter || "").toLowerCase();
     const matchesCity = cityFilter === "All" || user.city === cityFilter;
     const matchesName = nameFilter === "All" || user.userName === nameFilter;
 
@@ -539,6 +541,7 @@ export default function SettingsView() {
                       </>
                     )}
                     <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Pass</th>
+                    <th className="sticky top-0 z-50 bg-slate-50 border-b border-slate-100 px-4 py-3 text-left text-xs font-bold text-slate-600">Timestamp</th>
                     <th className="sticky top-0 right-0 z-[60] bg-slate-50 border-b border-l border-slate-100 px-4 py-3 text-right text-xs font-bold text-slate-600 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Action</th>
                   </tr>
                 </thead>
@@ -565,6 +568,7 @@ export default function SettingsView() {
                           </>
                         )}
                         <td className="px-4 py-3 border-b border-slate-50"><PasswordCell password={user.pass} /></td>
+                        <td className="px-4 py-3 border-b border-slate-50 text-slate-500 text-[10px] whitespace-nowrap">{user.timestamp || "-"}</td>
                         <td className="sticky right-0 z-10 bg-white border-l border-b border-slate-50 px-4 py-3 text-right shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-slate-50/80 transition-colors">
                           <div className="flex justify-end gap-2">
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(user)} className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Settings className="w-4 h-4" /></Button>
@@ -656,6 +660,12 @@ export default function SettingsView() {
                             </div>
                           </div>
                         )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] font-black text-slate-300 uppercase w-10">Time</span>
+                          <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                            <p className="text-[9px] text-slate-400 font-medium truncate">{user.timestamp || "No Data"}</p>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Card Footer Actions */}
