@@ -117,7 +117,7 @@ export default function PremiumConsumerInterface() {
 
     // Check if the coupon code is even valid before hitting the Google API
     const coupons = storageUtils.getCoupons()
-    const couponIndex = coupons.findIndex((coupon) => coupon.code === formData.couponCode)
+    const couponIndex = coupons.findIndex((coupon: Coupon) => coupon.code === formData.couponCode)
 
     if (couponIndex === -1) {
       setMessage({ type: "error", content: "Invalid coupon code. Please check and try again." })

@@ -22,6 +22,8 @@ import {
   IndianRupee,
   Send,
   AlertCircle,
+  Paperclip,
+  ExternalLink,
 } from "lucide-react";
 
 const GOOGLE_SCRIPT_URL =
@@ -40,6 +42,7 @@ interface PaymentItem {
   paymentStatus: string;
   remark: string;
   sn: string;
+  attachments?: string;
   rowIndex: number;
   rawRow: any[]; // Store original row data to preserve all columns
 }
@@ -65,6 +68,49 @@ const formatDate = (dateStr: string): string => {
   }
 };
 
+// Render attachment links if present
+const renderAttachments = (attachmentsStr: string) => {
+  if (!attachmentsStr || attachmentsStr.trim() === "") return "—";
+
+  // Split by comma or whitespace to handle multiple URLs
+  const urls = attachmentsStr.split(/[\s,]+/).filter(url => url.startsWith("http"));
+
+  if (urls.length === 0) {
+    return <span className="text-slate-500 truncate block max-w-[150px]" title={attachmentsStr}>{attachmentsStr}</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5 items-center">
+      {urls.map((url, idx) => (
+        <a
+          key={idx}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-800 hover:underline bg-red-50 hover:bg-red-100/80 px-2.5 py-1 rounded-md transition-colors"
+          title={url}
+        >
+          <Paperclip className="w-3.5 h-3.5" />
+          <span>{urls.length > 1 ? `View #${idx + 1}` : "View File"}</span>
+          <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+        </a>
+      ))}
+    </div>
+  );
+};
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64Str = reader.result?.toString().split(",")[1] || "";
+      resolve(base64Str);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function MakePaymentView() {
   const [allItems, setAllItems] = useState<PaymentItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -76,6 +122,8 @@ export default function MakePaymentView() {
   const [successDialogOpen, setSuccessDialogOpen] = useState<boolean>(false);
   const [successCount, setSuccessCount] = useState<number>(0);
   const [paymentRemark, setPaymentRemark] = useState<string>("");
+  const [paymentAttachment, setPaymentAttachment] = useState<File | null>(null);
+  const [attachmentsColIndex, setAttachmentsColIndex] = useState<number>(-1);
 
   const fetchPaymentData = async () => {
     setIsLoading(true);
@@ -88,13 +136,13 @@ export default function MakePaymentView() {
 
       if (result.success && result.data && result.data.length > 0) {
         const headers = result.data[0].map((h: any) => h ? String(h).trim().toLowerCase() : "");
-        let snIndex = headers.findIndex((h: string) => 
-          h === "serial no" || 
+        let snIndex = headers.findIndex((h: string) =>
+          h === "serial no" ||
           h === "serialno" ||
-          h === "sn" || 
-          h === "sl no" || 
-          h === "sl.no" || 
-          h === "s.no" || 
+          h === "sn" ||
+          h === "sl no" ||
+          h === "sl.no" ||
+          h === "s.no" ||
           h === "sno"
         );
         if (snIndex === -1) {
@@ -104,6 +152,15 @@ export default function MakePaymentView() {
         let remarkIndex = headers.indexOf("remark");
         if (remarkIndex === -1) {
           remarkIndex = 12; // fallback to Column M
+        }
+
+        let attachmentsIndex = headers.findIndex((h: string) =>
+          h === "attachments" ||
+          h === "attachment" ||
+          h.includes("attachment")
+        );
+        if (attachmentsIndex !== -1) {
+          setAttachmentsColIndex(attachmentsIndex + 1); // 1-indexed for Google Sheets
         }
 
         const paymentData = result.data
@@ -120,6 +177,7 @@ export default function MakePaymentView() {
             paymentStatus: row[8] ? row[8].toString().trim() : "",
             remark: row[remarkIndex] ? row[remarkIndex].toString() : "",
             sn: row[snIndex] ? row[snIndex].toString() : "",
+            attachments: attachmentsIndex !== -1 && row[attachmentsIndex] ? row[attachmentsIndex].toString() : "",
             rowIndex: index + 2, // +2 because of 0-indexing and header row
             rawRow: row, // Store original row to preserve all columns
           }));
@@ -196,6 +254,7 @@ export default function MakePaymentView() {
       return;
     }
     setPaymentRemark("");
+    setPaymentAttachment(null);
     setConfirmDialogOpen(true);
   };
 
@@ -204,6 +263,28 @@ export default function MakePaymentView() {
     setConfirmDialogOpen(false);
     setIsSubmitting(true);
     try {
+      let fileUrl = "";
+      if (paymentAttachment) {
+        // Upload the file first
+        const base64Data = await fileToBase64(paymentAttachment);
+        const uploadData = new FormData();
+        uploadData.append("action", "uploadFile");
+        uploadData.append("filename", paymentAttachment.name);
+        uploadData.append("mimeType", paymentAttachment.type);
+        uploadData.append("fileData", base64Data);
+
+        const uploadResponse = await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: uploadData,
+        });
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success && uploadResult.fileUrl) {
+          fileUrl = uploadResult.fileUrl;
+        } else {
+          throw new Error(uploadResult.error || "File upload failed");
+        }
+      }
+
       // Use Promise.all for parallel updates (2x faster)
       const updatePromises = selectedItems.map((code) => {
         const item = pendingItems.find((p) => p.code === code);
@@ -238,7 +319,23 @@ export default function MakePaymentView() {
           body: remarkParams.toString(),
         });
 
-        return Promise.all([statusPromise, remarkPromise]);
+        // Also update Attachments dynamically if file was uploaded
+        const targetCol = attachmentsColIndex !== -1 ? attachmentsColIndex : 15;
+        const attachmentPromise = fileUrl
+          ? fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              sheetName: COUPONS_SHEET,
+              action: "markDeleted",
+              rowIndex: item.rowIndex.toString(),
+              columnIndex: targetCol.toString(),
+              value: fileUrl,
+            }).toString(),
+          })
+          : Promise.resolve();
+
+        return Promise.all([statusPromise, remarkPromise, attachmentPromise]);
       });
 
       // Wait for all updates to complete in parallel
@@ -246,11 +343,12 @@ export default function MakePaymentView() {
 
       setSuccessCount(selectedItems.length);
       setSelectedItems([]);
+      setPaymentAttachment(null);
       await fetchPaymentData();
       setSuccessDialogOpen(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating payment status:", error);
-      alert("Error updating payment status. Please try again.");
+      alert("Error: " + (error.message || "Error updating payment status. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -443,8 +541,8 @@ export default function MakePaymentView() {
               {/* Desktop Table */}
               <div className="hidden lg:flex flex-col h-full bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
                 {/* Table Header */}
-                <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-5 py-3 flex-shrink-0 min-w-[1200px]">
-                  <div className="grid grid-cols-10 gap-4 text-xs font-medium text-white uppercase tracking-wider">
+                <div className="bg-gradient-to-r from-orange-600 to-orange-700 px-5 py-3 flex-shrink-0 min-w-[1400px]">
+                  <div className="grid grid-cols-11 gap-4 text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center gap-2">
                       <Checkbox
                         checked={
@@ -465,11 +563,12 @@ export default function MakePaymentView() {
                     <div>Phone</div>
                     <div>UPI Id</div>
                     <div>Claimed At</div>
+                    <div>Attachments</div>
                   </div>
                 </div>
 
                 {/* Table Body */}
-                <div className="flex-1 overflow-y-auto divide-y divide-gray-50 min-w-[1200px]">
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-50 min-w-[1400px]">
                   {filteredPendingItems.length === 0 ? (
                     <div className="text-center py-12">
                       <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -483,7 +582,7 @@ export default function MakePaymentView() {
                     filteredPendingItems.map((item, index) => (
                       <div
                         key={item.code}
-                        className={`grid grid-cols-10 gap-4 px-5 py-3.5 items-center hover:bg-orange-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        className={`grid grid-cols-11 gap-4 px-5 py-3.5 items-center hover:bg-orange-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                           }`}
                       >
                         <div className="flex items-center gap-2">
@@ -533,6 +632,9 @@ export default function MakePaymentView() {
                         </div>
                         <div className="text-sm text-slate-500">
                           {formatDate(item.claimedAt)}
+                        </div>
+                        <div className="text-sm text-slate-500">
+                          {renderAttachments(item.attachments || "")}
                         </div>
                       </div>
                     ))
@@ -630,6 +732,14 @@ export default function MakePaymentView() {
                               {formatDate(item.claimedAt)}
                             </p>
                           </div>
+                          {item.attachments && (
+                            <div className="col-span-2 mt-1">
+                              <p className="text-xs text-slate-400">Attachments</p>
+                              <div className="mt-1">
+                                {renderAttachments(item.attachments)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -643,8 +753,8 @@ export default function MakePaymentView() {
               {/* Desktop Table */}
               <div className="hidden lg:flex flex-col h-full bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
                 {/* Table Header */}
-                <div className="bg-gradient-to-r from-green-600 to-green-700 px-5 py-3 flex-shrink-0 min-w-[1200px]">
-                  <div className="grid grid-cols-10 gap-4 text-xs font-medium text-white uppercase tracking-wider">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 px-5 py-3 flex-shrink-0 min-w-[1400px]">
+                  <div className="grid grid-cols-11 gap-4 text-xs font-medium text-white uppercase tracking-wider">
                     <div>SN</div>
                     <div>Status</div>
                     <div>Created Date</div>
@@ -655,11 +765,12 @@ export default function MakePaymentView() {
                     <div>UPI Id</div>
                     <div>Claimed At</div>
                     <div>Remark</div>
+                    <div>Attachments</div>
                   </div>
                 </div>
 
                 {/* Table Body */}
-                <div className="flex-1 overflow-y-auto divide-y divide-gray-50 min-w-[1200px]">
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-50 min-w-[1400px]">
                   {filteredHistoryItems.length === 0 ? (
                     <div className="text-center py-12">
                       <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -673,7 +784,7 @@ export default function MakePaymentView() {
                     filteredHistoryItems.map((item, index) => (
                       <div
                         key={item.code}
-                        className={`grid grid-cols-10 gap-4 px-5 py-3.5 items-center hover:bg-green-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                        className={`grid grid-cols-11 gap-4 px-5 py-3.5 items-center hover:bg-green-50/30 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                           }`}
                       >
                         <div className="text-sm font-medium text-slate-500">
@@ -717,6 +828,9 @@ export default function MakePaymentView() {
                         </div>
                         <div className="text-sm text-slate-500 truncate" title={item.remark}>
                           {item.remark || "—"}
+                        </div>
+                        <div className="text-sm text-slate-500">
+                          {renderAttachments(item.attachments || "")}
                         </div>
                       </div>
                     ))
@@ -805,6 +919,14 @@ export default function MakePaymentView() {
                               {item.remark || "—"}
                             </p>
                           </div>
+                          {item.attachments && (
+                            <div className="col-span-2 mt-1">
+                              <p className="text-xs text-slate-400">Attachments</p>
+                              <div className="mt-1">
+                                {renderAttachments(item.attachments)}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -863,6 +985,33 @@ export default function MakePaymentView() {
                 onChange={(e) => setPaymentRemark(e.target.value)}
                 className="h-10 rounded-xl border-orange-200 focus:border-orange-500 focus:ring-orange-500 bg-white"
               />
+            </div>
+
+            <div className="space-y-1.5 mt-3">
+              <label htmlFor="attachment" className="text-xs font-medium text-slate-500 uppercase flex items-center justify-between">
+                <span>Attachment (Optional)</span>
+                {paymentAttachment && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAttachment(null)}
+                    className="text-red-500 hover:text-red-700 text-xs normal-case font-normal"
+                  >
+                    Clear File
+                  </button>
+                )}
+              </label>
+              <Input
+                id="attachment"
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setPaymentAttachment(file);
+                }}
+                className="h-10 rounded-xl border-orange-200 focus:border-orange-500 focus:ring-orange-500 bg-white file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer pt-1.5"
+              />
+              <p className="text-[10px] text-slate-400">
+                Upload payment receipt screenshot. File will be saved in Google Drive.
+              </p>
             </div>
           </div>
           <div className="flex gap-3">
