@@ -24,6 +24,8 @@ import {
   AlertCircle,
   Paperclip,
   ExternalLink,
+  Upload,
+  X,
 } from "lucide-react";
 
 const GOOGLE_SCRIPT_URL =
@@ -68,15 +70,56 @@ const formatDate = (dateStr: string): string => {
   }
 };
 
-// Render attachment links if present
-const renderAttachments = (attachmentsStr: string) => {
-  if (!attachmentsStr || attachmentsStr.trim() === "") return "—";
+// Render attachment links with upload button
+const renderAttachments = (
+  attachmentsStr: string,
+  onUploadClick?: (e: React.MouseEvent) => void,
+  onRemoveClick?: (e: React.MouseEvent) => void,
+  isUploading?: boolean
+) => {
+  if (!attachmentsStr || attachmentsStr.trim() === "") {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onUploadClick}
+        disabled={isUploading}
+        className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+      >
+        {isUploading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Upload className="w-3.5 h-3.5 mr-1" />
+        )}
+        {isUploading ? "Uploading..." : "Upload"}
+      </Button>
+    );
+  }
 
   // Split by comma or whitespace to handle multiple URLs
   const urls = attachmentsStr.split(/[\s,]+/).filter(url => url.startsWith("http"));
 
   if (urls.length === 0) {
-    return <span className="text-slate-500 truncate block max-w-[150px]" title={attachmentsStr}>{attachmentsStr}</span>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="text-slate-500 truncate block max-w-[150px]" title={attachmentsStr}>
+          {attachmentsStr}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onUploadClick}
+          disabled={isUploading}
+          className="h-6 px-1.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+        >
+          {isUploading ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Upload className="w-3 h-3" />
+          )}
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -95,6 +138,30 @@ const renderAttachments = (attachmentsStr: string) => {
           <ExternalLink className="w-2.5 h-2.5 opacity-60" />
         </a>
       ))}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onUploadClick}
+        disabled={isUploading}
+        className="h-7 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+      >
+        {isUploading ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Upload className="w-3.5 h-3.5 mr-1" />
+        )}
+        {isUploading ? "Uploading..." : "Upload"}
+      </Button>
+      {onRemoveClick && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRemoveClick}
+          className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      )}
     </div>
   );
 };
@@ -124,6 +191,10 @@ export default function MakePaymentView() {
   const [paymentRemark, setPaymentRemark] = useState<string>("");
   const [paymentAttachment, setPaymentAttachment] = useState<File | null>(null);
   const [attachmentsColIndex, setAttachmentsColIndex] = useState<number>(-1);
+  const [uploadingRowIndex, setUploadingRowIndex] = useState<number | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState<boolean>(false);
+  const [selectedRowForUpload, setSelectedRowForUpload] = useState<PaymentItem | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   const fetchPaymentData = async () => {
     setIsLoading(true);
@@ -245,6 +316,95 @@ export default function MakePaymentView() {
       setSelectedItems([]);
     } else {
       setSelectedItems(filteredPendingItems.map((item) => item.code));
+    }
+  };
+
+  // Open upload dialog for a specific row
+  const openUploadDialog = (item: PaymentItem) => {
+    setSelectedRowForUpload(item);
+    setUploadFile(null);
+    setUploadDialogOpen(true);
+  };
+
+  // Handle file upload from dialog
+  const handleUploadFromDialog = async () => {
+    if (!uploadFile || !selectedRowForUpload) {
+      alert("Please select a file to upload.");
+      return;
+    }
+
+    setUploadingRowIndex(selectedRowForUpload.rowIndex);
+    setUploadDialogOpen(false);
+
+    try {
+      // Upload the file
+      const base64Data = await fileToBase64(uploadFile);
+      const uploadData = new FormData();
+      uploadData.append("action", "uploadFile");
+      uploadData.append("filename", uploadFile.name);
+      uploadData.append("mimeType", uploadFile.type);
+      uploadData.append("fileData", base64Data);
+
+      const uploadResponse = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        body: uploadData,
+      });
+      const uploadResult = await uploadResponse.json();
+
+      let fileUrl = "";
+      if (uploadResult.success && uploadResult.fileUrl) {
+        fileUrl = uploadResult.fileUrl;
+      } else {
+        throw new Error(uploadResult.error || "File upload failed");
+      }
+
+      // Update the attachments column with the new URL
+      const targetCol = attachmentsColIndex !== -1 ? attachmentsColIndex : 15;
+
+      // Get existing attachments
+      const existingAttachments = selectedRowForUpload.attachments || "";
+      let newAttachments = fileUrl;
+
+      if (existingAttachments.trim() !== "") {
+        // Append new URL to existing ones
+        const existingUrls = existingAttachments.split(/[\s,]+/).filter(url => url.trim() !== "");
+        existingUrls.push(fileUrl);
+        newAttachments = existingUrls.join(", ");
+      }
+
+      const updateParams = new URLSearchParams({
+        sheetName: COUPONS_SHEET,
+        action: "markDeleted",
+        rowIndex: selectedRowForUpload.rowIndex.toString(),
+        columnIndex: targetCol.toString(),
+        value: newAttachments,
+      });
+
+      const updateResponse = await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: updateParams.toString(),
+      });
+
+      const updateResult = await updateResponse.json();
+
+      if (!updateResult.success) {
+        throw new Error(updateResult.error || "Failed to update attachment");
+      }
+
+      // Refresh data to show the new attachment
+      await fetchPaymentData();
+
+      // Show success message
+      alert("File uploaded successfully!");
+
+    } catch (error: any) {
+      console.error("Error uploading file:", error);
+      alert("Error: " + (error.message || "Failed to upload file. Please try again."));
+    } finally {
+      setUploadingRowIndex(null);
+      setSelectedRowForUpload(null);
+      setUploadFile(null);
     }
   };
 
@@ -380,7 +540,7 @@ export default function MakePaymentView() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-hidden ">
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
@@ -634,7 +794,12 @@ export default function MakePaymentView() {
                           {formatDate(item.claimedAt)}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {renderAttachments(item.attachments || "")}
+                          {renderAttachments(
+                            item.attachments || "",
+                            () => openUploadDialog(item),
+                            undefined,
+                            uploadingRowIndex === item.rowIndex
+                          )}
                         </div>
                       </div>
                     ))
@@ -732,14 +897,17 @@ export default function MakePaymentView() {
                               {formatDate(item.claimedAt)}
                             </p>
                           </div>
-                          {item.attachments && (
-                            <div className="col-span-2 mt-1">
-                              <p className="text-xs text-slate-400">Attachments</p>
-                              <div className="mt-1">
-                                {renderAttachments(item.attachments)}
-                              </div>
+                          <div className="col-span-2 mt-1">
+                            <p className="text-xs text-slate-400">Attachments</p>
+                            <div className="mt-1">
+                              {renderAttachments(
+                                item.attachments || "",
+                                () => openUploadDialog(item),
+                                undefined,
+                                uploadingRowIndex === item.rowIndex
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -830,7 +998,12 @@ export default function MakePaymentView() {
                           {item.remark || "—"}
                         </div>
                         <div className="text-sm text-slate-500">
-                          {renderAttachments(item.attachments || "")}
+                          {renderAttachments(
+                            item.attachments || "",
+                            () => openUploadDialog(item),
+                            undefined,
+                            uploadingRowIndex === item.rowIndex
+                          )}
                         </div>
                       </div>
                     ))
@@ -919,14 +1092,17 @@ export default function MakePaymentView() {
                               {item.remark || "—"}
                             </p>
                           </div>
-                          {item.attachments && (
-                            <div className="col-span-2 mt-1">
-                              <p className="text-xs text-slate-400">Attachments</p>
-                              <div className="mt-1">
-                                {renderAttachments(item.attachments)}
-                              </div>
+                          <div className="col-span-2 mt-1">
+                            <p className="text-xs text-slate-400">Attachments</p>
+                            <div className="mt-1">
+                              {renderAttachments(
+                                item.attachments || "",
+                                () => openUploadDialog(item),
+                                undefined,
+                                uploadingRowIndex === item.rowIndex
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -937,6 +1113,84 @@ export default function MakePaymentView() {
           )}
         </div>
       </div>
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Upload className="w-5 h-5 text-blue-600" />
+              </div>
+              Upload Attachment
+            </DialogTitle>
+            <DialogDescription>
+              {selectedRowForUpload && (
+                <>Upload a file for payment: <span className="font-semibold">{selectedRowForUpload.code}</span></>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-blue-50 rounded-xl p-4 my-4">
+            <div className="space-y-1.5">
+              <label htmlFor="uploadFile" className="text-xs font-medium text-slate-500 uppercase">
+                Select File
+              </label>
+              <Input
+                id="uploadFile"
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file) {
+                    // Check file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                      alert("File size should be less than 10MB");
+                      e.target.value = "";
+                      return;
+                    }
+                    setUploadFile(file);
+                  }
+                }}
+                className="h-10 rounded-xl border-blue-200 focus:border-blue-500 focus:ring-blue-500 bg-white file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer pt-1.5"
+              />
+              <p className="text-[10px] text-slate-400">
+                Upload payment receipt or supporting document. Max file size: 10MB.
+                Supported formats: Images, PDF, Word, Excel, etc.
+              </p>
+              {uploadFile && (
+                <div className="mt-2 p-2 bg-white rounded-lg border border-blue-200 flex items-center justify-between">
+                  <span className="text-sm text-slate-600 truncate flex-1">
+                    {uploadFile.name}
+                  </span>
+                  <span className="text-xs text-slate-400 ml-2">
+                    {(uploadFile.size / 1024).toFixed(1)} KB
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUploadDialogOpen(false);
+                setUploadFile(null);
+                setSelectedRowForUpload(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUploadFromDialog}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={!uploadFile}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
