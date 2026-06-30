@@ -1241,32 +1241,7 @@ export default function MakePaymentView() {
               />
             </div>
 
-            <div className="space-y-1.5 mt-3">
-              <label htmlFor="attachment" className="text-xs font-medium text-slate-500 uppercase flex items-center justify-between">
-                <span>Attachment (Optional)</span>
-                {paymentAttachment && (
-                  <button
-                    type="button"
-                    onClick={() => setPaymentAttachment(null)}
-                    className="text-red-500 hover:text-red-700 text-xs normal-case font-normal"
-                  >
-                    Clear File
-                  </button>
-                )}
-              </label>
-              <Input
-                id="attachment"
-                type="file"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setPaymentAttachment(file);
-                }}
-                className="h-10 rounded-xl border-orange-200 focus:border-orange-500 focus:ring-orange-500 bg-white file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer pt-1.5"
-              />
-              <p className="text-[10px] text-slate-400">
-                Upload payment receipt screenshot. File will be saved in Google Drive.
-              </p>
-            </div>
+
           </div>
           <div className="flex gap-3">
             <Button
